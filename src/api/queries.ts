@@ -20,10 +20,10 @@ export type CreditRequest = Schema<'CreditRequest'>;
 export type CreditReceipt = Schema<'CreditReceiptDto'>;
 export type LedgerEntryPage = Schema<'LedgerEntryPage'>;
 
-/** The client, rebuilt only when the session changes. */
+/** The client, rebuilt only when the session object itself changes. */
 function useApi() {
-  const { token } = useAuth();
-  return useMemo(() => createApi(token), [token]);
+  const { session } = useAuth();
+  return useMemo(() => createApi(session), [session]);
 }
 
 /**

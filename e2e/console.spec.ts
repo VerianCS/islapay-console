@@ -18,18 +18,25 @@ test('la consola, contra el host de verdad', async ({ page }) => {
 
   await page.goto('/');
 
-  // 1. Sign in, which happens at Keycloak and not here.
-  await expect(page.getByRole('button', { name: /entrar con keycloak/i })).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/1-entrar.png`, fullPage: true });
+  // 1. A wrong password first: the refusal has to be a sentence, and the
+  // password field has to be empty again afterwards.
+  await page.getByLabel('Correo').fill(EMAIL);
+  await page.getByLabel('Contraseña').fill('not-the-password');
+  await page.getByRole('button', { name: /^entrar$/i }).click();
+  await expect(page.getByRole('alert')).toHaveText('Correo o contraseña incorrectos.');
+  await expect(page.getByLabel('Contraseña')).toHaveValue('');
+  await page.screenshot({ path: `${SHOTS}/1-entrar-mal.png`, fullPage: true });
 
-  await page.getByRole('button', { name: /entrar con keycloak/i }).click();
-  await page.waitForURL(/8080\/realms\/islapay/);
-  await page.fill('#username', EMAIL);
-  await page.fill('#password', PASSWORD);
-  await page.click('#kc-login');
+  // Then the right one.
+  await page.getByLabel('Contraseña').fill(PASSWORD);
+  await page.screenshot({ path: `${SHOTS}/1-entrar.png`, fullPage: true });
+  await page.getByRole('button', { name: /^entrar$/i }).click();
 
   // 2. Funds.
   await page.waitForURL(/\/fondos$/);
+  // The password is not left anywhere the page can read it back.
+  const stored = await page.evaluate(() => JSON.stringify({ ...sessionStorage, ...localStorage }));
+  expect(stored).not.toContain(PASSWORD);
   await expect(page.getByRole('heading', { name: 'Fondos' })).toBeVisible();
   await expect(page.getByText('tesorera@islapay.cu')).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/2-fondos-vacio.png`, fullPage: true });
@@ -81,5 +88,54 @@ test('la consola, contra el host de verdad', async ({ page }) => {
   await expect(page.getByText('EISLA')).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/8-catalogo.png`, fullPage: true });
 
-  expect(problems, `consola del navegador:\n${problems.join('\n')}`).toEqual([]);
+  // 8. A reload keeps the treasurer signed in, from the refresh token the tab
+  // kept, and never asks for the password again.
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Monedas y redes' })).toBeVisible();
+  await expect(page.getByLabel('Contraseña')).toHaveCount(0);
+
+  // 9. Sign out, and a reload after it does not bring the session back.
+  await page.getByRole('button', { name: /^salir$/i }).click();
+  await expect(page.getByLabel('Contraseña')).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel('Contraseña')).toBeVisible();
+
+  // The wrong password in step 1 is a 401 the browser logs by itself; it is
+  // the refusal this test asked for, not a fault.
+  const unexpected = problems.filter((p) => !/401/.test(p));
+  expect(unexpected, `consola del navegador:\n${unexpected.join('\n')}`).toEqual([]);
+});
+
+test('sigue funcionando cuando el token de acceso caduca', async ({ page }) => {
+  // Access tokens in the development realm live sixty seconds. The unit tests
+  // prove the refresh logic against a stubbed server; this proves Keycloak
+  // actually accepts the refresh token this page kept, and rotates it.
+  test.setTimeout(150_000);
+
+  await page.goto('/');
+  await page.getByLabel('Correo').fill(EMAIL);
+  await page.getByLabel('Contraseña').fill(PASSWORD);
+  await page.getByRole('button', { name: /^entrar$/i }).click();
+  await page.waitForURL(/\/fondos$/);
+
+  const before = await page.evaluate(() => sessionStorage.getItem('islapay.console.refresh'));
+
+  // Past the sixty seconds, and past the fifteen-second margin.
+  await page.waitForTimeout(62_000);
+
+  const refreshes: number[] = [];
+  page.on('response', (r) => {
+    if (r.url().includes('/v1/auth/token/refresh')) refreshes.push(r.status());
+  });
+
+  await page.getByRole('link', { name: /conciliación/i }).click();
+  await expect(page.getByRole('heading', { name: 'Conciliación' })).toBeVisible();
+  await expect(page.getByText(/No hay nada que conciliar|Cuadra|No cuadra/).first()).toBeVisible();
+
+  // One refresh, however many requests the screen made; and a new refresh
+  // token, because Keycloak rotates them and the old one is now spent.
+  expect(refreshes).toEqual([200]);
+  const after = await page.evaluate(() => sessionStorage.getItem('islapay.console.refresh'));
+  expect(after).not.toBeNull();
+  expect(after).not.toBe(before);
 });

@@ -4,16 +4,7 @@ import { config } from '../config';
 import type { paths } from './schema';
 import { ApiFailure, Unreachable } from './problems';
 import type { ApiProblem } from './problems';
-
-/**
- * Where the access token comes from.
- *
- * A function rather than a value because a token expires while the page is
- * open. The session hands the freshest one it has on every request; a client
- * built around a string would keep using the token it was born with until
- * somebody reloaded.
- */
-export type AccessToken = () => string | undefined;
+import type { TokenSource } from '../auth/session';
 
 /**
  * The typed client, generated from the server's own specification.
@@ -24,22 +15,48 @@ export type AccessToken = () => string | undefined;
  * response — and a transcription drifts silently. `npm run api` regenerates
  * `schema.d.ts` from `/openapi/v1.json`, and a route or a field that changes
  * shape stops compiling here rather than failing in front of a treasurer.
+ *
+ * A 401 is retried once, with a fresh token. Access tokens here live sixty
+ * seconds, so a request that set off with a good one and arrived with a dead
+ * one is ordinary, not an error. Only once: a second 401 means the session is
+ * really gone, and looping would hide that.
+ *
+ * The retry is safe for the one request here that moves money, and for the
+ * same reason it is safe everywhere: a 401 is decided before the endpoint
+ * runs, so nothing happened, and the retried request carries the same
+ * idempotency key besides.
  */
-export function createApi(token: AccessToken): Client<paths> {
+export function createApi(session: TokenSource): Client<paths> {
   return createClient<paths>({
     baseUrl: config.apiBase,
     headers: { Accept: 'application/json' },
     fetch: async (request) => {
-      const bearer = token();
-      if (bearer) request.headers.set('Authorization', `Bearer ${bearer}`);
+      // Cloned before the first send, because sending consumes the body.
+      const again = request.clone();
 
-      try {
-        return await fetch(request);
-      } catch (cause) {
-        throw new Unreachable(cause);
-      }
+      const token = await session.accessToken();
+      const first = await send(authorise(request, token));
+      if (first.status !== 401 || token === undefined) return first;
+
+      const fresh = await session.forceRefresh(token);
+      if (fresh === undefined) return first;
+
+      return send(authorise(again, fresh));
     },
   });
+}
+
+function authorise(request: Request, token: string | undefined): Request {
+  if (token !== undefined) request.headers.set('Authorization', `Bearer ${token}`);
+  return request;
+}
+
+async function send(request: Request): Promise<Response> {
+  try {
+    return await fetch(request);
+  } catch (cause) {
+    throw new Unreachable(cause);
+  }
 }
 
 /**

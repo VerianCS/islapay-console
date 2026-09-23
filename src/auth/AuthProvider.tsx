@@ -1,110 +1,77 @@
-import { createContext, use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, use, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
-import type { User } from 'oidc-client-ts';
 import { config } from '../config';
-import { restoreSession, toOperator, userManager } from './session';
-import type { Operator } from './session';
+import { Session } from './session';
+import type { Ended, Operator, TokenSource } from './session';
 
 export interface AuthState {
   readonly operator: Operator | null;
+  /** True until the tab has found out whether it still has a session. */
   readonly loading: boolean;
-  readonly error: string | null;
-  readonly signIn: () => Promise<void>;
+  /** Why the last session ended on its own, if it did. */
+  readonly ended: Ended;
+  readonly signIn: (email: string, password: string) => Promise<void>;
   readonly signOut: () => Promise<void>;
-  /** The freshest access token, for the API client. */
-  readonly token: () => string | undefined;
+  /** What the API client reads tokens from. */
+  readonly session: TokenSource;
 }
 
 /**
- * Exported so a test can supply a session without a Keycloak.
+ * Exported so a test can supply a session without a server.
  *
- * The alternative is a test that redirects to an identity provider, which is
- * not a test of anything this repository owns. What is under test here is what
- * the screens do with a session, and a session is four fields.
+ * What the screens are tested for is what they do with a session, and a
+ * session is a handful of fields.
  */
 export const AuthContext = createContext<AuthState | null>(null);
 
-
 /**
- * Holds the session, and keeps the token the API client reads current.
+ * Holds the one session this tab has.
  *
- * The token is kept in a ref as well as in state. State is what re-renders the
- * screen; the ref is what a request reads, and the two exist separately
- * because a fetch started between a silent renewal and the next render would
- * otherwise send the token that had just been replaced.
+ * The session is an object outside React, and the provider subscribes to it
+ * rather than copying it into state. A token refresh happens inside a request,
+ * not inside a render, and a copy would always be one refresh behind.
  */
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [operator, setOperator] = useState<Operator | null>(null);
+export function AuthProvider({ children, session: given }: { children: ReactNode; session?: Session }) {
+  const [session] = useState(() => given ?? new Session());
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const token = useRef<string | undefined>(undefined);
 
-  const adopt = useCallback((user: User | null) => {
-    if (!user || user.expired) {
-      token.current = undefined;
-      setOperator(null);
-      return;
-    }
-
-    const next = toOperator(user);
-    token.current = next.accessToken;
-    setOperator(next);
-  }, []);
+  const snapshot = useSyncExternalStore(
+    (listener) => session.subscribe(listener),
+    () => session.operator,
+  );
+  const ended = useSyncExternalStore(
+    (listener) => session.subscribe(listener),
+    () => session.ended,
+  );
 
   useEffect(() => {
-    let cancelled = false;
+    let live = true;
 
-    async function restore() {
-      try {
-        // Single-flight, in the module rather than here: React runs this
-        // effect twice in development, and an authorization code may be
-        // exchanged exactly once.
-        const user = await restoreSession();
-        if (!cancelled) adopt(user);
-      } catch (cause) {
-        if (!cancelled) {
-          setError(cause instanceof Error ? cause.message : 'No se pudo restaurar la sesión.');
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    void restore();
-
-    const onLoaded = (user: User) => adopt(user);
-    const onUnloaded = () => adopt(null);
-    // A silent renewal that fails means the session at Keycloak is gone —
-    // revoked, expired, signed out in another tab. Dropping the operator here
-    // sends them back to the sign-in screen instead of letting every request
-    // answer 401 one by one.
-    const onSilentRenewError = () => adopt(null);
-
-    userManager.events.addUserLoaded(onLoaded);
-    userManager.events.addUserUnloaded(onUnloaded);
-    userManager.events.addSilentRenewError(onSilentRenewError);
+    // A reload, not a sign-in: the tab may still hold a refresh token. A
+    // failure here is not shown — a network hiccup on load is better answered
+    // by the sign-in form than by an error about a session nobody asked for.
+    session
+      .restore()
+      .catch(() => false)
+      .finally(() => {
+        if (live) setLoading(false);
+      });
 
     return () => {
-      cancelled = true;
-      userManager.events.removeUserLoaded(onLoaded);
-      userManager.events.removeUserUnloaded(onUnloaded);
-      userManager.events.removeSilentRenewError(onSilentRenewError);
+      live = false;
     };
-  }, [adopt]);
+  }, [session]);
 
   const value = useMemo<AuthState>(
     () => ({
-      operator,
+      operator: snapshot,
       loading,
-      error,
-      signIn: () => userManager.signinRedirect(),
-      signOut: async () => {
-        adopt(null);
-        await userManager.signoutRedirect();
-      },
-      token: () => token.current,
+      ended,
+      signIn: (email, password) => session.signIn(email, password),
+      signOut: () => session.signOut(),
+      session,
     }),
-    [operator, loading, error, adopt],
+    [snapshot, loading, ended, session],
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;

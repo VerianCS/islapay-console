@@ -1,147 +1,266 @@
-import { User, UserManager, WebStorageStateStore } from 'oidc-client-ts';
+import createClient from 'openapi-fetch';
+import type { Client } from 'openapi-fetch';
 import { config } from '../config';
+import type { paths } from '../api/schema';
+import { ApiFailure, Unreachable } from '../api/problems';
+import { unwrap } from '../api/client';
+import { readClaims, realmRoles } from './jwt';
 
-/**
- * Signing in, done at Keycloak rather than here.
- *
- * Authorization code with PKCE, and no password ever reaches this application.
- * That is deliberate and it is the main security decision in this repository:
- * the console is the surface whose holder can raise the float, so its sign-in
- * should be Keycloak's to harden — single sign-on, a second factor, a session
- * policy, a lockout — and none of that is possible if the password is typed
- * into a form we wrote. The mobile app uses a direct grant because a customer
- * signing into a phone through a browser redirect is a worse experience for a
- * much smaller stake; the trade is not the same one.
- *
- * The token lives in memory and in `sessionStorage`, never in
- * `localStorage`. A treasury token in `localStorage` outlives the tab, is
- * shared by every tab, and is readable by anything that ever manages to run a
- * script on this origin. `sessionStorage` is what makes closing the tab mean
- * something.
- */
-export const userManager = new UserManager({
-  authority: config.oidc.authority,
-  client_id: config.oidc.clientId,
-  redirect_uri: `${window.location.origin}/callback`,
-  post_logout_redirect_uri: window.location.origin,
-  response_type: 'code',
-  scope: 'openid profile email',
-
-  userStore: new WebStorageStateStore({ store: window.sessionStorage }),
-  stateStore: new WebStorageStateStore({ store: window.sessionStorage }),
-
-  // Renew in the background, a minute before the token dies. The alternative
-  // is a treasurer typing a credit into a form and being thrown out on submit.
-  automaticSilentRenew: true,
-  accessTokenExpiringNotificationTimeInSeconds: 60,
-
-  // Nothing here needs the user endpoint: the name and the roles are in the
-  // token already, and a second round trip on every sign-in buys nothing.
-  loadUserInfo: false,
-});
-
-/** Who is signed in, as this application needs them. */
+/** Who is signed in, as this console needs them. */
 export interface Operator {
   readonly id: string;
   readonly name: string;
   readonly email: string;
   readonly roles: readonly string[];
-  readonly accessToken: string;
-  readonly expiresAt: number | undefined;
 }
 
-export function toOperator(user: User): Operator {
-  const claims = user.profile as Record<string, unknown>;
+/**
+ * What the API client needs from a session, and nothing else.
+ *
+ * Narrow so a test can supply one in two lines, and so the client cannot
+ * reach into the session and start signing people in or out.
+ */
+export interface TokenSource {
+  /** A token good for at least a few more seconds, refreshed first if not. */
+  accessToken(): Promise<string | undefined>;
+
+  /**
+   * A token other than `stale`, after the server refused it.
+   *
+   * Takes the token that failed so that ten requests refused by the same
+   * expired token cause one refresh and not ten: whoever arrives after the
+   * first has refreshed gets the new token without asking again.
+   */
+  forceRefresh(stale: string): Promise<string | undefined>;
+}
+
+/** Why a session ended without anybody pressing "Salir". */
+export type Ended = 'expired' | null;
+
+/**
+ * Signing in with a password, through the same route the mobile app uses.
+ *
+ * `POST /v1/auth/login` is the Resource Owner Password grant in all but name.
+ * The backend documents what that costs and the console inherits it: the
+ * password passes through this page, so it is never stored, never logged and
+ * never kept in state after the request; and a second factor or single sign-on
+ * cannot be added through this door. If either becomes a requirement, this is
+ * replaced by authorization code with PKCE at Keycloak.
+ *
+ * The access token lives in memory only. The refresh token lives in
+ * `sessionStorage`, so a reload keeps the treasurer signed in and closing the
+ * tab does not — `localStorage` would outlive the tab, be shared by every tab,
+ * and be readable by anything that ever runs a script on this origin.
+ */
+export class Session implements TokenSource {
+  private access: string | undefined;
+  private refresh: string | undefined;
+  private expiresAt = 0;
+  private refreshing: Promise<string | undefined> | null = null;
+  private readonly listeners = new Set<() => void>();
+
+  private _operator: Operator | null = null;
+  private _ended: Ended = null;
+
+  constructor(
+    private readonly auth: Client<paths> = createClient<paths>({ baseUrl: config.apiBase }),
+    private readonly storage: Storage | null = safeSessionStorage(),
+    private readonly now: () => number = Date.now,
+  ) {}
+
+  get operator(): Operator | null {
+    return this._operator;
+  }
+
+  get ended(): Ended {
+    return this._ended;
+  }
+
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  /**
+   * Signs in. Throws the server's refusal as an `ApiFailure`.
+   *
+   * The password is a parameter and goes nowhere but the request body.
+   */
+  async signIn(email: string, password: string): Promise<void> {
+    const session = await unwrap(
+      guard(this.auth.POST('/v1/auth/login', { body: { email: email.trim(), password } })),
+    );
+    this.adopt(session.tokens);
+  }
+
+  /**
+   * Picks up where a reload left off, if the tab still has a refresh token.
+   *
+   * Answers false rather than throwing when there is nothing to restore or it
+   * has expired: that is the normal state of a new tab, not a failure.
+   */
+  async restore(): Promise<boolean> {
+    this.refresh = this.storage?.getItem(REFRESH_KEY) ?? undefined;
+    if (this.refresh === undefined) return false;
+
+    return (await this.refreshNow()) !== undefined;
+  }
+
+  async accessToken(): Promise<string | undefined> {
+    if (this.access !== undefined && this.now() < this.expiresAt - EARLY_MS) {
+      return this.access;
+    }
+    if (this.refresh === undefined) return undefined;
+
+    return this.refreshNow();
+  }
+
+  async forceRefresh(stale: string): Promise<string | undefined> {
+    // Somebody else already replaced it while this request was in flight.
+    if (this.access !== undefined && this.access !== stale) return this.access;
+    if (this.refresh === undefined) return undefined;
+
+    return this.refreshNow();
+  }
+
+  /**
+   * Signs out here and at the server.
+   *
+   * The local half happens first and unconditionally: a sign-out that failed
+   * because the network was down and left the treasurer signed in would be
+   * worse than one that forgot to tell Keycloak. The server half is best
+   * effort, and revokes the refresh token so a copy of it is worthless.
+   */
+  async signOut(): Promise<void> {
+    const access = this.access;
+    const refresh = this.refresh;
+    this.clear(null);
+
+    if (access === undefined || refresh === undefined) return;
+
+    try {
+      await this.auth.POST('/v1/auth/logout', {
+        body: { refreshToken: refresh },
+        headers: { Authorization: `Bearer ${access}` },
+      });
+    } catch {
+      // Already signed out locally. Nothing useful to tell anybody.
+    }
+  }
+
+  /**
+   * One refresh at a time, shared by everybody who needs it.
+   *
+   * With a sixty-second access token and a reconciliation screen that polls,
+   * two requests finding the token expired at once is the normal case rather
+   * than a race. Keycloak rotates the refresh token, so the second of two
+   * independent refreshes would present one the first had just spent — and be
+   * told the session is over.
+   */
+  private refreshNow(): Promise<string | undefined> {
+    this.refreshing ??= this.exchange().finally(() => {
+      this.refreshing = null;
+    });
+    return this.refreshing;
+  }
+
+  private async exchange(): Promise<string | undefined> {
+    const token = this.refresh;
+    if (token === undefined) return undefined;
+
+    try {
+      const pair = await unwrap(
+        guard(this.auth.POST('/v1/auth/token/refresh', { body: { refreshToken: token } })),
+      );
+      this.adopt(pair);
+      return this.access;
+    } catch (error) {
+      // The server said no: the refresh token has expired or been revoked,
+      // and nothing this tab can do will change that.
+      if (error instanceof ApiFailure && error.status < 500) {
+        this.clear('expired');
+        return undefined;
+      }
+      // Anything else — the network, a 503 — says nothing about the session.
+      // Keep it, and let the caller report the failure it actually had.
+      throw error;
+    }
+  }
+
+  private adopt(pair: { accessToken: string; refreshToken: string; expiresIn: number }): void {
+    this.access = pair.accessToken;
+    this.refresh = pair.refreshToken;
+    // From when the response arrived, not from the token's `exp`: this
+    // machine's clock may be minutes off the server's, and the relative figure
+    // is immune to that.
+    this.expiresAt = this.now() + pair.expiresIn * 1000;
+    this.storage?.setItem(REFRESH_KEY, pair.refreshToken);
+
+    this._operator = toOperator(pair.accessToken);
+    this._ended = null;
+    this.notify();
+  }
+
+  private clear(reason: Ended): void {
+    this.access = undefined;
+    this.refresh = undefined;
+    this.expiresAt = 0;
+    this.storage?.removeItem(REFRESH_KEY);
+
+    this._operator = null;
+    this._ended = reason;
+    this.notify();
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) listener();
+  }
+}
+
+const REFRESH_KEY = 'islapay.console.refresh';
+
+/**
+ * How early a token is replaced.
+ *
+ * Fifteen seconds, so a request started now does not arrive after the token it
+ * carries has died. With a sixty-second lifetime anything much larger would
+ * refresh on nearly every request.
+ */
+const EARLY_MS = 15_000;
+
+function toOperator(accessToken: string): Operator | null {
+  const claims = readClaims(accessToken);
+  if (!claims || typeof claims['sub'] !== 'string') return null;
 
   return {
-    id: user.profile.sub,
-    name: (claims['name'] as string | undefined) ?? user.profile.sub,
-    email: (claims['email'] as string | undefined) ?? '',
-    roles: realmRoles(user),
-    accessToken: user.access_token,
-    expiresAt: user.expires_at,
+    id: claims['sub'],
+    name: typeof claims['name'] === 'string' ? claims['name'] : claims['sub'],
+    email: typeof claims['email'] === 'string' ? claims['email'] : '',
+    roles: realmRoles(claims),
   };
 }
 
-/**
- * The realm roles, read out of the access token.
- *
- * Keycloak puts them in a `realm_access` claim on the *access* token, not the
- * id token, and `oidc-client-ts` only parses the latter. So the access token
- * is decoded here — which is safe precisely because nothing is trusted from
- * it: the server checks the role on every request, and this reading exists
- * only to decide what to show. A console that hid the credit form from
- * somebody who could use it would be annoying; one that showed it to somebody
- * who could not would be worse, and both are cosmetic.
- */
-function realmRoles(user: User): readonly string[] {
-  const payload = decodeJwtPayload(user.access_token);
-  if (!payload) return [];
-
-  const access = payload['realm_access'];
-  if (typeof access !== 'object' || access === null) return [];
-
-  const roles = (access as { roles?: unknown }).roles;
-  return Array.isArray(roles) ? roles.filter((r): r is string => typeof r === 'string') : [];
+/** A network failure, as the same `Unreachable` the API client raises. */
+async function guard<T>(call: Promise<T>): Promise<T> {
+  try {
+    return await call;
+  } catch (cause) {
+    throw new Unreachable(cause);
+  }
 }
 
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  const body = token.split('.')[1];
-  if (!body) return null;
-
+/**
+ * `sessionStorage`, or nothing.
+ *
+ * It throws in some private modes and in sandboxed frames. Without it the
+ * console still works; a reload just signs the treasurer out.
+ */
+function safeSessionStorage(): Storage | null {
   try {
-    const json = atob(body.replace(/-/g, '+').replace(/_/g, '/'));
-    // A JWT's payload is UTF-8 and `atob` gives bytes, so a name with an
-    // accent in it — which in Cuba is most of them — needs decoding rather
-    // than reading straight.
-    const text = new TextDecoder().decode(
-      Uint8Array.from(json, (character) => character.charCodeAt(0)),
-    );
-    return JSON.parse(text) as Record<string, unknown>;
+    const storage = window.sessionStorage;
+    storage.getItem(REFRESH_KEY);
+    return storage;
   } catch {
     return null;
   }
-}
-
-/**
- * Restores the session, at most once however many times it is asked.
- *
- * Single-flight because an authorization code may be exchanged exactly once.
- * React calls an effect twice in development on purpose, to surface exactly
- * this: the second call reached Keycloak with a code already spent and came
- * back "Code not valid", so sign-in failed and dropped the person back on the
- * sign-in screen with no explanation. Guarding the state update is not enough
- * — what must not happen twice is the exchange itself, and only something
- * outside the component can promise that.
- *
- * The same shape as the mobile client's token refresh, and for the same
- * reason: the expensive, un-repeatable half of the work is shared, not the
- * handler that happens to have asked for it.
- */
-let restoring: Promise<User | null> | null = null;
-
-export function restoreSession(): Promise<User | null> {
-  restoring ??= exchangeOrRead().finally(() => {
-    // Cleared once settled, so signing out and back in works without a
-    // reload. What it must not do is let two *concurrent* callers exchange.
-    restoring = null;
-  });
-
-  return restoring;
-}
-
-async function exchangeOrRead(): Promise<User | null> {
-  // Coming back from Keycloak: the code and the state are in the URL and have
-  // to be exchanged before anything else reads the address bar.
-  if (window.location.pathname === '/callback') {
-    const user = await userManager.signinCallback();
-
-    // Replaced rather than pushed: the code is in that URL, and leaving it in
-    // history leaves it in the address bar, the history file, and anything
-    // that syncs either.
-    window.history.replaceState({}, '', '/');
-    return user ?? null;
-  }
-
-  return userManager.getUser();
 }

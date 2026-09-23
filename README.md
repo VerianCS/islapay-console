@@ -25,9 +25,10 @@ python3 tools/provision-realm.py
 dotnet run --project src/IslaPay.Host
 ```
 
-Ese script crea el cliente `islapay-console` y el rol `treasury-admin`. El rol
-no se concede solo: hay que dárselo a una cuenta desde la consola de Keycloak,
-o no se ve nada.
+Se entra con el correo y la contraseña de una cuenta normal —la misma que en la
+app— que tenga el rol de realm `treasury-admin`. El script crea el rol pero no
+lo concede: hay que dárselo a la cuenta desde la consola de administración de
+Keycloak, o se entra y no se ve nada.
 
 | Comando | Qué hace |
 |---|---|
@@ -65,13 +66,21 @@ tesorero. Generar el cliente de verdad ya encontró dos defectos en la
 especificación publicada —cada marca de tiempo salía como `unknown`, y cada
 entero como `number | string`— que están arreglados en el backend.
 
-**Se entra por Keycloak.** Authorization code con PKCE; aquí no se teclea
-ninguna contraseña. Es la superficie cuyo titular puede subir el float, así que
-su inicio de sesión debe ser de Keycloak para endurecer —SSO, segundo factor,
-política de sesión— y nada de eso es posible con un formulario nuestro. El
-token vive en `sessionStorage`, no en `localStorage`: un token de tesorería en
-`localStorage` sobrevive a la pestaña, lo comparten todas, y lo lee cualquier
-cosa que llegue a ejecutar un script en este origen.
+**Se entra con contraseña, en esta página.** Por `POST /v1/auth/login`, la
+misma ruta que usa la app móvil, y el backend documenta lo que eso cuesta: la
+contraseña pasa por esta página, así que nunca se guarda ni se registra y se
+borra del formulario tras un rechazo; y por esta puerta no se puede añadir un
+segundo factor ni SSO. Si alguno de los dos llega a hacer falta, se cambia por
+authorization code con PKCE en Keycloak.
+
+El token de acceso vive sólo en memoria y dura sesenta segundos. El de refresco
+vive en `sessionStorage`: recargar mantiene la sesión y cerrar la pestaña no.
+`localStorage` sobreviviría a la pestaña, lo compartirían todas, y lo leería
+cualquier cosa que llegue a ejecutar un script en este origen. El refresco es
+de un solo vuelo —con tokens de sesenta segundos y una pantalla que sondea,
+varias peticiones encontrando el token caducado a la vez es lo normal, y
+Keycloak rota el token de refresco, así que dos refrescos independientes
+acabarían la sesión— y un 401 se reintenta una vez, con el token nuevo.
 
 **`code` es lo único que se ramifica.** Toda negativa del API llega como
 `application/problem+json`; `src/api/problems.ts` la traduce a una frase que
@@ -96,13 +105,9 @@ Esta versión ve los fondos, concilia el escrow, acredita el float y enciende o
 apaga monedas y redes. **No** trae la cola de operador de P2P: es otro trabajo,
 para otra persona, con otro rol.
 
-Lo que encontró recorrerla en un navegador, y ningún test unitario habría
-visto: el código de autorización se canjeaba dos veces (React ejecuta un efecto
-dos veces a propósito en desarrollo, y un código se canjea una sola vez); la
-autoridad OIDC por defecto decía `127.0.0.1` y el backend valida el emisor como
-cadena contra `localhost`, así que la entrada funcionaba y todas las peticiones
-respondían 401; y un catálogo que fallaba dejaba todas las pantallas de dinero
-cargando para siempre sin decir nada.
+`npm run e2e` recorre además la caducidad real de un token: entra, espera más
+de sesenta segundos y comprueba que la siguiente pantalla hace exactamente un
+refresco y que Keycloak rota el token de refresco.
 
 Lo que falta: no hay manera de sacar dinero (un ingreso se revierte asentando
 su inverso, y ninguna ruta lo hace), no hay exportación, y el saldo no se

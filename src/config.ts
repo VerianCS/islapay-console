@@ -21,22 +21,6 @@ export const config = {
   apiBase:
     (import.meta.env['VITE_API_BASE'] as string | undefined) || window.location.origin,
 
-  oidc: {
-    /**
-     * Must match the backend's `Keycloak:Issuer` character for character.
-     *
-     * `localhost` and `127.0.0.1` are the same machine and are *not* the same
-     * issuer: the `iss` claim is whatever host Keycloak was reached as, and
-     * the host validates it as a string. Getting this wrong signs somebody in
-     * successfully and then answers 401 to every request they make, which
-     * looks like a permissions problem and is not one.
-     */
-    authority:
-      (import.meta.env['VITE_OIDC_AUTHORITY'] as string | undefined) ??
-      'http://localhost:8080/realms/islapay',
-    clientId: (import.meta.env['VITE_OIDC_CLIENT_ID'] as string | undefined) ?? 'islapay-console',
-  },
-
   /** The realm role every route here requires. */
   role: 'treasury-admin',
 } as const;

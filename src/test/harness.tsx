@@ -6,11 +6,11 @@ import { AuthContext } from '../auth/AuthProvider';
 import type { AuthState } from '../auth/AuthProvider';
 
 /**
- * A signed-in treasurer, without a Keycloak.
+ * A signed-in treasurer, without a server.
  *
- * What these tests are about is what the screens do with a session, and a
- * session is four fields. Redirecting to an identity provider in a test would
- * be testing `oidc-client-ts`, which is not this repository's code.
+ * What these tests are about is what the screens do with a session. How the
+ * session itself signs in and refreshes is tested on its own, in
+ * `session.test.ts`, against the same stubbed network.
  */
 export function signedIn(roles: readonly string[] = ['treasury-admin']): AuthState {
   return {
@@ -19,14 +19,15 @@ export function signedIn(roles: readonly string[] = ['treasury-admin']): AuthSta
       name: 'Ana Pérez',
       email: 'ana@islapay.cu',
       roles,
-      accessToken: 'test-token',
-      expiresAt: undefined,
     },
     loading: false,
-    error: null,
+    ended: null,
     signIn: async () => {},
     signOut: async () => {},
-    token: () => 'test-token',
+    session: {
+      accessToken: async () => 'test-token',
+      forceRefresh: async () => 'test-token',
+    },
   };
 }
 

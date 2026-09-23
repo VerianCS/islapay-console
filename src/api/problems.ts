@@ -54,6 +54,16 @@ export class Unreachable extends Error {
  * code is what they will put in the message when they ask.
  */
 const MESSAGES: Readonly<Record<string, string>> = {
+  // Signing in. One message for a wrong address and a wrong password, as the
+  // server intends: telling them apart would tell a stranger which addresses
+  // have accounts.
+  invalid_credentials: 'Correo o contraseña incorrectos.',
+  account_disabled: 'Esta cuenta está desactivada.',
+  too_many_attempts:
+    'Demasiados intentos seguidos. Espera unos minutos antes de volver a probar.',
+  identity_unavailable:
+    'El servicio de identidad no responde. Vuelve a intentarlo en un momento.',
+
   forbidden:
     'Tu cuenta no tiene el rol treasury-admin. Alguien con acceso a Keycloak ' +
     'tiene que concedértelo.',
