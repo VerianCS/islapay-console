@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "api": "openapi-typescript ${ISLAPAY_OPENAPI:-http://127.0.0.1:5000/openapi/v1.json} --output src/api/schema.d.ts --root-types"
+    "api": "openapi-typescript ${ISLAPAY_OPENAPI:-http://127.0.0.1:5000/openapi/v1.json} --output src/api/schema.d.ts --root-types",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.103.2",
@@ -24,6 +25,7 @@
     "react-router": "^8.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

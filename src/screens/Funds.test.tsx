@@ -105,3 +105,30 @@ describe('Fondos', () => {
     );
   });
 });
+
+describe('Cuando el catálogo no responde', () => {
+  it('lo dice, en vez de quedarse cargando para siempre', async () => {
+    // Every screen that shows money waits for the catalogue, so a catalogue
+    // that fails silently leaves all of them spinning. That is how a 401 once
+    // looked like a slow server.
+    server.use(
+      http.get(`${API}/v1/catalog/currencies`, () => problem(401, 'token_invalid')),
+      balances([]),
+    );
+
+    renderWith(<Funds />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/sesión caducó/i);
+    expect(screen.queryByText(/cargando/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps the page’s own title while it loads', async () => {
+    server.use(catalogue(), balances([]));
+
+    renderWith(<Funds />);
+
+    // A screen whose heading appears only once the data has arrived is a
+    // screen that looks broken for as long as the network takes.
+    expect(screen.getByRole('heading', { name: 'Fondos' })).toBeInTheDocument();
+  });
+});

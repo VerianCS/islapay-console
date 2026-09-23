@@ -35,6 +35,14 @@ o no se ve nada.
 | `npm run api` | Regenera los tipos desde la especificación publicada |
 | `npm test` | Vitest sobre MSW |
 | `npm run build` | `tsc --noEmit` y luego el bundle |
+| `npm run e2e` | La consola en un navegador de verdad, contra el stack entero |
+
+`npm run e2e` no forma parte de `npm test` y CI no debería descubrirlo
+fallando: necesita Postgres, Keycloak, RabbitMQ, el host y el servidor de
+desarrollo levantados, y una cuenta con `treasury-admin`. Lo que compra es la
+única comprobación de que la redirección de entrada, el token, el cliente
+generado y el servidor se entienden —todo lo cual los tests unitarios simulan,
+y en todo lo cual ha vivido un fallo real.
 
 ## Las decisiones que importan
 
@@ -87,6 +95,14 @@ leer esta pantalla.
 Esta versión ve los fondos, concilia el escrow, acredita el float y enciende o
 apaga monedas y redes. **No** trae la cola de operador de P2P: es otro trabajo,
 para otra persona, con otro rol.
+
+Lo que encontró recorrerla en un navegador, y ningún test unitario habría
+visto: el código de autorización se canjeaba dos veces (React ejecuta un efecto
+dos veces a propósito en desarrollo, y un código se canjea una sola vez); la
+autoridad OIDC por defecto decía `127.0.0.1` y el backend valida el emisor como
+cadena contra `localhost`, así que la entrada funcionaba y todas las peticiones
+respondían 401; y un catálogo que fallaba dejaba todas las pantallas de dinero
+cargando para siempre sin decir nada.
 
 Lo que falta: no hay manera de sacar dinero (un ingreso se revierte asentando
 su inverso, y ninguna ruta lo hace), no hay exportación, y el saldo no se

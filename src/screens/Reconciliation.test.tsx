@@ -131,11 +131,15 @@ describe('Conciliación', () => {
     expect(screen.getByText(/ningún módulo reclama nada/i)).toBeInTheDocument();
   });
 
-  it('does not pretend there is nothing wrong when there is nothing to check', async () => {
+  it('does not call an empty question an agreement', async () => {
     server.use(catalogue(), report([], true));
 
     renderWith(<Reconciliation />);
 
-    expect(await screen.findByText(/no hay qué conciliar/i)).toBeInTheDocument();
+    // The server answers `balanced: true` when there is nothing to compare,
+    // which is correct and would be a lie on screen: a green "cuadra" over an
+    // empty table claims a check was made that was not.
+    expect(await screen.findByText(/todavía no hay pregunta/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^Cuadra\./)).not.toBeInTheDocument();
   });
 });

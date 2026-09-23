@@ -191,8 +191,11 @@ export function useCredit(): UseMutationResult<CreditReceipt, Error, CreditReque
  * Every screen that shows money needs this and none of them should build it,
  * so it is derived from the one query that already holds the table.
  */
-export function useScales(): CurrencyScales & { readonly ready: boolean } {
-  const { data } = useCatalogue();
+export function useScales(): CurrencyScales & {
+  readonly ready: boolean;
+  readonly error: unknown;
+} {
+  const { data, error } = useCatalogue();
 
   return useMemo(() => {
     const byCode = new Map<string, Currency>(
@@ -201,9 +204,14 @@ export function useScales(): CurrencyScales & { readonly ready: boolean } {
 
     return {
       ready: data !== undefined,
+      // Carried out, not swallowed. Every screen that shows money waits for
+      // this, so a catalogue that fails and says nothing leaves all of them
+      // spinning for ever — which is how a 401 spent an afternoon looking
+      // like a slow server.
+      error,
       find: (code: string) => byCode.get(code),
     };
-  }, [data]);
+  }, [data, error]);
 }
 
 /** Reads a wire amount, or gives up rather than guessing a scale. */

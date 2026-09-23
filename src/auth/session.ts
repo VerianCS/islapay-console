@@ -102,3 +102,46 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
     return null;
   }
 }
+
+/**
+ * Restores the session, at most once however many times it is asked.
+ *
+ * Single-flight because an authorization code may be exchanged exactly once.
+ * React calls an effect twice in development on purpose, to surface exactly
+ * this: the second call reached Keycloak with a code already spent and came
+ * back "Code not valid", so sign-in failed and dropped the person back on the
+ * sign-in screen with no explanation. Guarding the state update is not enough
+ * — what must not happen twice is the exchange itself, and only something
+ * outside the component can promise that.
+ *
+ * The same shape as the mobile client's token refresh, and for the same
+ * reason: the expensive, un-repeatable half of the work is shared, not the
+ * handler that happens to have asked for it.
+ */
+let restoring: Promise<User | null> | null = null;
+
+export function restoreSession(): Promise<User | null> {
+  restoring ??= exchangeOrRead().finally(() => {
+    // Cleared once settled, so signing out and back in works without a
+    // reload. What it must not do is let two *concurrent* callers exchange.
+    restoring = null;
+  });
+
+  return restoring;
+}
+
+async function exchangeOrRead(): Promise<User | null> {
+  // Coming back from Keycloak: the code and the state are in the URL and have
+  // to be exchanged before anything else reads the address bar.
+  if (window.location.pathname === '/callback') {
+    const user = await userManager.signinCallback();
+
+    // Replaced rather than pushed: the code is in that URL, and leaving it in
+    // history leaves it in the address bar, the history file, and anything
+    // that syncs either.
+    window.history.replaceState({}, '', '/');
+    return user ?? null;
+  }
+
+  return userManager.getUser();
+}

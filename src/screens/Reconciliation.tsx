@@ -1,4 +1,4 @@
-import { Badge, Card, Empty, Failure, Loading, Moment, Note } from '../ui/components';
+import { Badge, Card, Failure, Loading, Moment, Note } from '../ui/components';
 import { formatMoney } from '../money/money';
 import { readMoney, useReconciliation, useScales } from '../api/queries';
 import type { EscrowRow } from '../api/queries';
@@ -15,10 +15,16 @@ export function Reconciliation() {
   const report = useReconciliation();
   const scales = useScales();
 
-  if (report.isPending || !scales.ready) return <Loading what="la conciliación" />;
+  if (scales.error !== null && scales.error !== undefined)
+    return <Failure error={scales.error} />;
   if (report.isError) return <Failure error={report.error} />;
+  if (report.isPending || !scales.ready) return <Loading what="la conciliación" />;
 
   const inFlight = report.data.currencies.some((row) => !isZero(row.inFlight.amount));
+  // Nothing in escrow and nothing claimed is not agreement, it is an empty
+  // question. A green "cuadra" over an empty table claims a check was made
+  // that was not, which is the one thing this screen must never do.
+  const nothing = report.data.currencies.length === 0;
 
   return (
     <>
@@ -33,7 +39,12 @@ export function Reconciliation() {
         </div>
       </div>
 
-      {report.data.balanced ? (
+      {nothing ? (
+        <Note tone="warn">
+          No hay nada que conciliar: el escrow no retiene nada y ningún módulo reclama
+          nada. Esto no es «cuadra», es que todavía no hay pregunta.
+        </Note>
+      ) : report.data.balanced ? (
         <Note tone={inFlight ? 'warn' : 'ok'}>
           {inFlight
             ? 'Cuadra, con dinero en vuelo. Un asiento pedido y todavía sin confirmar cae ' +
@@ -52,15 +63,11 @@ export function Reconciliation() {
         {report.isFetching && ' · actualizando…'} · se refresca solo cada 30 s
       </p>
 
-      {report.data.currencies.length === 0 ? (
-        <Card>
-          <Empty>
-            El escrow no retiene nada y ningún módulo reclama nada. No hay qué conciliar.
-          </Empty>
-        </Card>
-      ) : (
-        report.data.currencies.map((row) => <CurrencyRow key={row.currency} row={row} scales={scales} />)
-      )}
+      {nothing
+        ? null
+        : report.data.currencies.map((row) => (
+            <CurrencyRow key={row.currency} row={row} scales={scales} />
+          ))}
     </>
   );
 }

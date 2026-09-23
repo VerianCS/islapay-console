@@ -2,7 +2,7 @@ import { createContext, use, useCallback, useEffect, useMemo, useRef, useState }
 import type { ReactNode } from 'react';
 import type { User } from 'oidc-client-ts';
 import { config } from '../config';
-import { toOperator, userManager } from './session';
+import { restoreSession, toOperator, userManager } from './session';
 import type { Operator } from './session';
 
 export interface AuthState {
@@ -56,19 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function restore() {
       try {
-        // Coming back from Keycloak. The code and state are in the URL and
-        // must be exchanged before anything else looks at the address bar.
-        if (window.location.pathname === '/callback') {
-          const user = await userManager.signinCallback();
-          if (!cancelled) adopt(user ?? null);
-          // Replaced rather than pushed: the authorization code is in that
-          // URL, and leaving it in history means it is in the browser's
-          // address bar, its history file, and anything that syncs either.
-          window.history.replaceState({}, '', '/');
-          return;
-        }
-
-        const user = await userManager.getUser();
+        // Single-flight, in the module rather than here: React runs this
+        // effect twice in development, and an authorization code may be
+        // exchanged exactly once.
+        const user = await restoreSession();
         if (!cancelled) adopt(user);
       } catch (cause) {
         if (!cancelled) {

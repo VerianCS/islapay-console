@@ -22,5 +22,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
+    // The browser suite is Playwright's and needs the whole stack up. Vitest
+    // picking it up would fail the unit run for a reason that has nothing to
+    // do with the unit run.
+    exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
   },
 });

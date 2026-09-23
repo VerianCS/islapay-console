@@ -24,8 +24,51 @@ export function Funds() {
   const [crediting, setCrediting] = useState(false);
   const [looking, setLooking] = useState<{ owner: string; currency: string } | null>(null);
 
-  if (balances.isPending || !scales.ready) return <Loading what="los saldos" />;
-  if (balances.isError) return <Failure error={balances.error} />;
+  const head = (
+    <div className="page-head">
+      <div>
+        <h1>Fondos</h1>
+        <p>
+          Cada cuenta que IslaPay tiene a su nombre. Los saldos del cliente no están
+          aquí: eso es dinero de alguien, se lee de uno en uno, y ninguna pantalla los
+          quiere todos a la vez.
+        </p>
+      </div>
+      <div style={{ flex: 1 }} />
+      <button type="button" className="primary" onClick={() => setCrediting(true)}>
+        Ingresar dinero
+      </button>
+    </div>
+  );
+
+  // The catalogue first: it is what says how many decimal places a currency
+  // has, and without it no amount on this screen can be rendered at all.
+  if (scales.error !== null && scales.error !== undefined) {
+    return (
+      <>
+        {head}
+        <Failure error={scales.error} />
+      </>
+    );
+  }
+
+  if (balances.isError) {
+    return (
+      <>
+        {head}
+        <Failure error={balances.error} />
+      </>
+    );
+  }
+
+  if (balances.isPending || !scales.ready) {
+    return (
+      <>
+        {head}
+        <Loading what="los saldos" />
+      </>
+    );
+  }
 
   const accounts = [...balances.data.accounts].sort(compare);
   const groups = ORDER.filter((owner) => accounts.some((a) => a.owner === owner));
