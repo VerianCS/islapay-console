@@ -1,4 +1,4 @@
-# IslaPay · Consola de tesorería
+# IslaPay · Consola de tesorería y mesa P2P
 
 Dónde está el dinero de la plataforma, si el escrow cuadra, y la única puerta
 por la que entra más.
@@ -102,8 +102,22 @@ leer esta pantalla.
 ## Alcance
 
 Esta versión ve los fondos, concilia el escrow, acredita el float y enciende o
-apaga monedas y redes. **No** trae la cola de operador de P2P: es otro trabajo,
-para otra persona, con otro rol.
+apaga monedas y redes (rol `treasury-admin`), y trae la **mesa P2P** para otra
+persona con otro rol, `p2p-operator`:
+
+- **Cola P2P**: lo que espera a alguien, que se actualiza sola. Una venta se
+  marca «pagada» o «falló» y una compra «recibida», siempre con la referencia
+  del banco (o el motivo, que lee el cliente) y con una clave idempotente por
+  diálogo. Debajo, buscar por referencia —con o sin guion— o por estado: una
+  compra vencida y pagada tarde se encuentra ahí y se acredita igual.
+- **Métodos P2P**: un método por moneda local (un solo CUP). Encender y apagar,
+  nombre y límites en la moneda local, precio de venta y de compra por cada
+  moneda de la billetera (E-ISLA, USDT, USDC; vacío deja de ofrecer ese
+  sentido), instrucciones de pago y alta de un método para otra moneda fiat
+  que el catálogo tenga encendida.
+
+Cada rol ve sólo sus pantallas; quien tiene los dos, las dos.
+`e2e/p2p.spec.ts` recorre la mesa contra el host real (ver su cabecera).
 
 `npm run e2e` recorre además la caducidad real de un token: entra, espera más
 de sesenta segundos y comprueba que la siguiente pantalla hace exactamente un

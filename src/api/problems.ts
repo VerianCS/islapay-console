@@ -65,8 +65,8 @@ const MESSAGES: Readonly<Record<string, string>> = {
     'El servicio de identidad no responde. Vuelve a intentarlo en un momento.',
 
   forbidden:
-    'Tu cuenta no tiene el rol treasury-admin. Alguien con acceso a Keycloak ' +
-    'tiene que concedértelo.',
+    'Tu cuenta no tiene el rol que pide esta pantalla (treasury-admin o ' +
+    'p2p-operator). Alguien con acceso a Keycloak tiene que concedértelo.',
   token_invalid: 'La sesión caducó. Vuelve a entrar.',
   unknown_destination:
     'Sólo se puede acreditar al float o al fondo de liquidación. El escrow ' +
@@ -84,6 +84,26 @@ const MESSAGES: Readonly<Record<string, string>> = {
     'La misma petición todavía se está procesando. Espera un momento antes de ' +
     'repetirla.',
   malformed_request: 'El servidor no pudo leer la petición.',
+
+  // The P2P desk.
+  method_not_found: 'Ese método ya no existe.',
+  method_exists: 'Ya hay un método para esa moneda: un solo método por moneda.',
+  invalid_currency:
+    'Esa moneda no sirve ahí: un método se abre para una moneda fiat encendida ' +
+    'en el catálogo, y se cotiza contra E-ISLA, USDT o USDC.',
+  invalid_limits:
+    'Los límites van en la moneda del método, el mínimo por encima de cero y ' +
+    'no mayor que el máximo.',
+  invalid_method_name: 'El nombre tiene que tener entre 1 y 40 caracteres.',
+  invalid_instructions: 'Las instrucciones no pueden pasar de 1000 caracteres.',
+  rate_unavailable: 'El precio tiene que ser un decimal mayor que cero.',
+  invalid_amount:
+    'Falta la referencia del banco o el motivo, o el estado buscado no existe.',
+  trade_not_found: 'Esa operación no existe.',
+  trade_not_open:
+    'La operación ya no está abierta: otra persona la cerró, o el cliente la ' +
+    'canceló. Se actualiza la lista.',
+  wrong_side: 'Esa acción es del otro sentido: «pagado» es de una venta, «recibido» de una compra.',
 };
 
 export function describe(error: unknown): string {

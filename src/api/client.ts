@@ -75,6 +75,11 @@ export async function unwrap<T>(
 
   if (response.ok && data !== undefined) return data;
 
+  // A 204 is a success with nothing to say: every switch and every published
+  // price answers that way. `openapi-fetch` leaves `data` undefined for it,
+  // and treating that as a failure made every one of them look refused.
+  if (response.status === 204) return undefined as T;
+
   throw new ApiFailure(response.status, asProblem(error, response));
 }
 

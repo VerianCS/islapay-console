@@ -1633,6 +1633,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/p2p/trades": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    reference?: string;
+                    status?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["P2PQueueItemDto"][];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/p2p/trades/{id}/paid": {
         parameters: {
             query?: never;
@@ -1829,6 +1877,132 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/admin/p2p/methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["P2PAdminMethodDto"][];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["P2PMethodCreate"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["P2PAdminMethodDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/p2p/methods/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["P2PMethodUpdate"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["P2PAdminMethodDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/v1/admin/p2p/methods/{id}/available": {
         parameters: {
             query?: never;
@@ -1849,6 +2023,54 @@ export interface paths {
                 cookie?: never;
             };
             requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/p2p/methods/{id}/instructions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["P2PInstructionsUpdate"];
+                };
+            };
             responses: {
                 /** @description No Content */
                 204: {
@@ -2457,18 +2679,75 @@ export interface components {
             phone: string;
             code: string;
         };
+        P2PAdminMethodDto: {
+            id: string;
+            name: string;
+            code: string;
+            available: boolean;
+            instructions: string;
+            minimum: components["schemas"]["Money"];
+            maximum: components["schemas"]["Money"];
+            rates: components["schemas"]["P2PMethodRateDto"][];
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            updatedAt: string;
+        };
         P2PFailRequest: {
             reason: string;
+        };
+        P2PInstructionsUpdate: {
+            instructions: string;
+        };
+        P2PMethodCreate: {
+            currency: string;
+            minimum: components["schemas"]["Money"];
+            maximum: components["schemas"]["Money"];
+            name?: null | string;
+            instructions?: null | string;
         };
         P2PMethodDto: {
             id: string;
             name: string;
             code: string;
-            sellRate: string;
-            buyRate: string;
             available: boolean;
             minimum: components["schemas"]["Money"];
             maximum: components["schemas"]["Money"];
+            rates: components["schemas"]["P2PMethodRateDto"][];
+        };
+        P2PMethodRateDto: {
+            currency: string;
+            sellRate: null | string;
+            buyRate: null | string;
+        };
+        P2PMethodUpdate: {
+            name?: null | string;
+            minimum?: {
+                /**
+                 * @description A decimal string in the currency's own scale: "100.50".
+                 * @example 100.50
+                 */
+                amount: string;
+                /**
+                 * @description A code from GET /v1/catalog/currencies.
+                 * @example EISLA
+                 */
+                currency: string;
+            };
+            maximum?: {
+                /**
+                 * @description A decimal string in the currency's own scale: "100.50".
+                 * @example 100.50
+                 */
+                amount: string;
+                /**
+                 * @description A code from GET /v1/catalog/currencies.
+                 * @example EISLA
+                 */
+                currency: string;
+            };
         };
         P2PQueueItemDto: {
             id: string;
@@ -2488,6 +2767,21 @@ export interface components {
              */
             createdAt: string;
             waiting: string;
+            payoutTo?: null | string;
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            expiresAt?: string;
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            settledAt?: string;
+            operatorReference?: null | string;
+            failureReason?: null | string;
         };
         P2PQuoteDto: {
             side: components["schemas"]["P2PSide"];
@@ -2509,7 +2803,7 @@ export interface components {
             methodId: string;
             side: components["schemas"]["P2PSide"];
             walletCurrency: string;
-            rate: string;
+            rate: null | string;
         };
         P2PSettleRequest: {
             reference: string;
@@ -2547,12 +2841,14 @@ export interface components {
              * @example 2026-09-22T14:05:09.123Z
              */
             settledAt: string;
+            payoutTo?: null | string;
         };
         P2PTradeRequest: {
             side: components["schemas"]["P2PSide"];
             amount: components["schemas"]["Money"];
             methodId: string;
             quotedRate?: null | string;
+            payoutTo?: null | string;
         };
         PasswordResetConfirmRequest: {
             email: string;
@@ -2689,8 +2985,13 @@ export type SchemaNetworkDto = components['schemas']['NetworkDto'];
 export type SchemaOrderDto = components['schemas']['OrderDto'];
 export type SchemaOtpResendResponse = components['schemas']['OtpResendResponse'];
 export type SchemaOtpVerifyRequest = components['schemas']['OtpVerifyRequest'];
+export type SchemaP2PAdminMethodDto = components['schemas']['P2PAdminMethodDto'];
 export type SchemaP2PFailRequest = components['schemas']['P2PFailRequest'];
+export type SchemaP2PInstructionsUpdate = components['schemas']['P2PInstructionsUpdate'];
+export type SchemaP2PMethodCreate = components['schemas']['P2PMethodCreate'];
 export type SchemaP2PMethodDto = components['schemas']['P2PMethodDto'];
+export type SchemaP2PMethodRateDto = components['schemas']['P2PMethodRateDto'];
+export type SchemaP2PMethodUpdate = components['schemas']['P2PMethodUpdate'];
 export type SchemaP2PQueueItemDto = components['schemas']['P2PQueueItemDto'];
 export type SchemaP2PQuoteDto = components['schemas']['P2PQuoteDto'];
 export type SchemaP2PQuoteRequest = components['schemas']['P2PQuoteRequest'];
