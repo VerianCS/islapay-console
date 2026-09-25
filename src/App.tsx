@@ -1,15 +1,18 @@
 import { NavLink, Navigate, Route, Routes } from 'react-router';
 import { config } from './config';
-import { useAuth, useIsTreasuryAdmin } from './auth/AuthProvider';
+import { useAuth, useIsP2POperator, useIsTreasuryAdmin } from './auth/AuthProvider';
 import { Card, Note } from './ui/components';
 import { SignIn } from './auth/SignIn';
 import { Funds } from './screens/Funds';
 import { Reconciliation } from './screens/Reconciliation';
 import { Catalogue } from './screens/Catalogue';
+import { P2PDesk } from './screens/P2PDesk';
+import { P2PMethods } from './screens/P2PMethods';
 
 export function App() {
   const { operator, loading, ended, signIn, signOut } = useAuth();
-  const allowed = useIsTreasuryAdmin();
+  const treasury = useIsTreasuryAdmin();
+  const desk = useIsP2POperator();
 
   if (loading) {
     return (
@@ -24,18 +27,34 @@ export function App() {
   // The server checks this on every request; the check here only decides what
   // to show. Showing a credit form to somebody who cannot use it would be a
   // dead end with no explanation, which is the one thing worse than hiding it.
-  if (!allowed) return <NoRole operator={operator.email} onSignOut={signOut} />;
+  if (!treasury && !desk) return <NoRole operator={operator.email} onSignOut={signOut} />;
+
+  // Each role sees its own screens and lands on the first of them. A route
+  // it cannot use is not linked, and the server refuses it anyway.
+  const home = treasury ? '/fondos' : '/p2p';
 
   return (
     <div className="shell">
       <header className="topbar">
         <div className="topbar__brand">
-          IslaPay <span>Tesorería</span>
+          IslaPay <span>{treasury ? 'Tesorería' : 'Mesa P2P'}</span>
         </div>
         <nav className="nav">
-          <NavLink to="/fondos">Fondos</NavLink>
-          <NavLink to="/conciliacion">Conciliación</NavLink>
-          <NavLink to="/catalogo">Monedas y redes</NavLink>
+          {treasury && (
+            <>
+              <NavLink to="/fondos">Fondos</NavLink>
+              <NavLink to="/conciliacion">Conciliación</NavLink>
+              <NavLink to="/catalogo">Monedas y redes</NavLink>
+            </>
+          )}
+          {desk && (
+            <>
+              <NavLink to="/p2p" end>
+                Cola P2P
+              </NavLink>
+              <NavLink to="/p2p/metodos">Métodos P2P</NavLink>
+            </>
+          )}
         </nav>
         <div className="topbar__spacer" />
         <div className="topbar__who">
@@ -50,11 +69,21 @@ export function App() {
 
       <main>
         <Routes>
-          <Route path="/" element={<Navigate to="/fondos" replace />} />
-          <Route path="/fondos" element={<Funds />} />
-          <Route path="/conciliacion" element={<Reconciliation />} />
-          <Route path="/catalogo" element={<Catalogue />} />
-          <Route path="*" element={<Navigate to="/fondos" replace />} />
+          <Route path="/" element={<Navigate to={home} replace />} />
+          {treasury && (
+            <>
+              <Route path="/fondos" element={<Funds />} />
+              <Route path="/conciliacion" element={<Reconciliation />} />
+              <Route path="/catalogo" element={<Catalogue />} />
+            </>
+          )}
+          {desk && (
+            <>
+              <Route path="/p2p" element={<P2PDesk />} />
+              <Route path="/p2p/metodos" element={<P2PMethods />} />
+            </>
+          )}
+          <Route path="*" element={<Navigate to={home} replace />} />
         </Routes>
       </main>
     </div>
@@ -67,12 +96,14 @@ function NoRole({ operator, onSignOut }: { operator: string; onSignOut: () => vo
       <Card title="Sin permiso">
         <div className="card__body">
           <Note tone="warn">
-            <strong>{operator}</strong> no tiene el rol <code>{config.role}</code>.
+            <strong>{operator}</strong> no tiene el rol <code>{config.role}</code> ni{' '}
+            <code>{config.p2pRole}</code>.
           </Note>
           <p className="muted">
-            Es un rol de realm, aparte de <code>catalog-admin</code> y del de operador de
-            P2P: quien enciende una moneda no debería poder además fondearla. Alguien con
-            acceso a Keycloak tiene que concedértelo.
+            Son roles de realm distintos, y aparte de <code>catalog-admin</code>: quien
+            enciende una moneda no debería poder además fondearla, y quien paga pesos en la
+            mesa P2P no debería poder meter dinero en los fondos. Alguien con acceso a
+            Keycloak tiene que concederte el que te toque.
           </p>
           <button type="button" onClick={onSignOut}>
             Salir

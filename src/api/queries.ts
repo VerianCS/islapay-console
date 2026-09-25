@@ -19,6 +19,14 @@ export type EscrowRow = Schema<'EscrowReconciliationDto'>;
 export type CreditRequest = Schema<'CreditRequest'>;
 export type CreditReceipt = Schema<'CreditReceiptDto'>;
 export type LedgerEntryPage = Schema<'LedgerEntryPage'>;
+export type P2PQueueItem = Schema<'P2PQueueItemDto'>;
+export type P2PTrade = Schema<'P2PTradeDto'>;
+export type P2PAdminMethod = Schema<'P2PAdminMethodDto'>;
+export type P2PMethodRate = Schema<'P2PMethodRateDto'>;
+export type P2PMethodCreate = Schema<'P2PMethodCreate'>;
+export type P2PMethodUpdate = Schema<'P2PMethodUpdate'>;
+export type P2PRateUpdate = Schema<'P2PRateUpdate'>;
+export type P2PSide = Schema<'P2PSide'>;
 
 /** The client, rebuilt only when the session object itself changes. */
 function useApi() {
@@ -182,6 +190,201 @@ export function useCredit(): UseMutationResult<CreditReceipt, Error, CreditReque
         }),
       ),
     onSuccess: () => cache.invalidateQueries({ queryKey: ['treasury'] }),
+  });
+}
+
+// ------------------------------------------------------------------ P2P desk
+
+type Void = Promise<{ data?: void; error?: unknown; response: Response }>;
+
+/**
+ * What waits on a person, oldest first.
+ *
+ * Polled every fifteen seconds while the page is open. The queue is the
+ * operator's whole job, and a sale that appeared a minute ago and is not on
+ * screen is a customer waiting for pesos nobody knows they are owed.
+ */
+export function useP2PQueue(): UseQueryResult<readonly P2PQueueItem[]> {
+  const api = useApi();
+
+  return useQuery({
+    queryKey: ['p2p', 'queue'],
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
+    queryFn: () => unwrap(api.GET('/v1/admin/p2p/queue', { params: { query: { limit: 200 } } })),
+  });
+}
+
+/**
+ * Everything the queue does not show, found by reference or status.
+ *
+ * Only asked once there is something to ask with: an empty search would be
+ * the whole history, newest first, which is nobody's question.
+ */
+export function useP2PSearch(
+  reference: string,
+  status: string,
+): UseQueryResult<readonly P2PQueueItem[]> {
+  const api = useApi();
+  const ref = reference.trim();
+
+  return useQuery({
+    queryKey: ['p2p', 'search', ref, status],
+    enabled: ref !== '' || status !== '',
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/admin/p2p/trades', {
+          params: {
+            query: {
+              ...(ref !== '' ? { reference: ref } : {}),
+              ...(status !== '' ? { status } : {}),
+              limit: 100,
+            },
+          },
+        }),
+      ),
+  });
+}
+
+/**
+ * Settles one leg: a sale paid out, or a purchase's pesos received.
+ *
+ * The key comes from the dialog, minted when it opens. Pressing again after a
+ * timeout is the same settlement asked twice, and the server answers the
+ * second with the first — which is the whole point: sending somebody pesos
+ * twice is the failure this desk exists to not make.
+ */
+export function useSettleTrade(): UseMutationResult<
+  P2PTrade,
+  Error,
+  { id: string; action: 'paid' | 'received'; reference: string; key: string }
+> {
+  const api = useApi();
+  const cache = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, action, reference, key }) =>
+      unwrap(
+        action === 'paid'
+          ? api.POST('/v1/admin/p2p/trades/{id}/paid', {
+              params: { path: { id } },
+              body: { reference },
+              headers: { 'Idempotency-Key': key },
+            })
+          : api.POST('/v1/admin/p2p/trades/{id}/received', {
+              params: { path: { id } },
+              body: { reference },
+              headers: { 'Idempotency-Key': key },
+            }),
+      ),
+    onSettled: () => cache.invalidateQueries({ queryKey: ['p2p'] }),
+  });
+}
+
+/** A sale that could not be paid: the money goes back, with the reason shown to the customer. */
+export function useFailTrade(): UseMutationResult<
+  P2PTrade,
+  Error,
+  { id: string; reason: string; key: string }
+> {
+  const api = useApi();
+  const cache = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, reason, key }) =>
+      unwrap(
+        api.POST('/v1/admin/p2p/trades/{id}/failed', {
+          params: { path: { id } },
+          body: { reason },
+          headers: { 'Idempotency-Key': key },
+        }),
+      ),
+    onSettled: () => cache.invalidateQueries({ queryKey: ['p2p'] }),
+  });
+}
+
+/** Every rail as the desk edits it, switched off ones included. */
+export function useP2PMethods(): UseQueryResult<readonly P2PAdminMethod[]> {
+  const api = useApi();
+
+  return useQuery({
+    queryKey: ['p2p', 'methods'],
+    queryFn: () => unwrap(api.GET('/v1/admin/p2p/methods', {})),
+  });
+}
+
+/** Publishes a price, or withdraws one with a null rate. Appends; never edits. */
+export function useSetP2PRate(): UseMutationResult<void, Error, P2PRateUpdate> {
+  const api = useApi();
+  const cache = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (body) => {
+      await unwrap(api.PUT('/v1/admin/p2p/rates', { body }) as Void);
+    },
+    onSettled: () => cache.invalidateQueries({ queryKey: ['p2p', 'methods'] }),
+  });
+}
+
+export function useSetP2PAvailable(): UseMutationResult<void, Error, { id: string; value: boolean }> {
+  const api = useApi();
+  const cache = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, value }) => {
+      await unwrap(
+        api.PUT('/v1/admin/p2p/methods/{id}/available', {
+          params: { path: { id }, query: { value } },
+        }) as Void,
+      );
+    },
+    onSettled: () => cache.invalidateQueries({ queryKey: ['p2p', 'methods'] }),
+  });
+}
+
+export function useSetP2PInstructions(): UseMutationResult<
+  void,
+  Error,
+  { id: string; instructions: string }
+> {
+  const api = useApi();
+  const cache = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, instructions }) => {
+      await unwrap(
+        api.PUT('/v1/admin/p2p/methods/{id}/instructions', {
+          params: { path: { id } },
+          body: { instructions },
+        }) as Void,
+      );
+    },
+    onSettled: () => cache.invalidateQueries({ queryKey: ['p2p', 'methods'] }),
+  });
+}
+
+export function useCreateP2PMethod(): UseMutationResult<P2PAdminMethod, Error, P2PMethodCreate> {
+  const api = useApi();
+  const cache = useQueryClient();
+
+  return useMutation({
+    mutationFn: (body) => unwrap(api.POST('/v1/admin/p2p/methods', { body })),
+    onSettled: () => cache.invalidateQueries({ queryKey: ['p2p', 'methods'] }),
+  });
+}
+
+export function useUpdateP2PMethod(): UseMutationResult<
+  P2PAdminMethod,
+  Error,
+  { id: string; update: P2PMethodUpdate }
+> {
+  const api = useApi();
+  const cache = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, update }) =>
+      unwrap(api.PATCH('/v1/admin/p2p/methods/{id}', { params: { path: { id } }, body: update })),
+    onSettled: () => cache.invalidateQueries({ queryKey: ['p2p', 'methods'] }),
   });
 }
 

@@ -83,8 +83,14 @@ export function useAuth(): AuthState {
   return value;
 }
 
-/** Whether the signed-in operator may use this console at all. */
+/** Whether the signed-in operator may use the treasury screens. */
 export function useIsTreasuryAdmin(): boolean {
   const { operator } = useAuth();
   return operator?.roles.includes(config.role) ?? false;
+}
+
+/** Whether the signed-in operator may work the P2P desk. */
+export function useIsP2POperator(): boolean {
+  const { operator } = useAuth();
+  return operator?.roles.includes(config.p2pRole) ?? false;
 }

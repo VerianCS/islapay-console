@@ -88,4 +88,19 @@ describe('La consola', () => {
 
     expect(await screen.findByRole('heading', { name: 'Fondos' })).toBeInTheDocument();
   });
+
+  it('lets a P2P operator in to the desk, and only to the desk', async () => {
+    server.use(
+      catalogue(),
+      http.get('/v1/admin/p2p/queue', () => HttpResponse.json([])),
+    );
+
+    renderWith(<MemoryRouter initialEntries={['/fondos']}>{<App />}</MemoryRouter>, signedIn(['p2p-operator']));
+
+    // Sent to the desk: the funds are not theirs to see.
+    expect(await screen.findByRole('heading', { name: 'Mesa P2P' })).toBeInTheDocument();
+    const nav = screen.getByRole('navigation');
+    expect(nav).toHaveTextContent('Cola P2P');
+    expect(nav).not.toHaveTextContent('Fondos');
+  });
 });

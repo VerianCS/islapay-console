@@ -63,3 +63,29 @@ export function problem(status: number, code: string, detail?: string) {
     { status, headers: { 'Content-Type': 'application/problem+json' } },
   );
 }
+
+/**
+ * The catalogue as the P2P screens need it: the wallet currencies, the peso
+ * the desk pays in, a fiat currency switched on with no rail yet, and one
+ * listed but switched off.
+ */
+export function p2pCatalogue() {
+  const row = (
+    code: string,
+    scale: number,
+    kind: string,
+    customerHoldable: boolean,
+    enabled: boolean,
+  ) => ({ code, name: code, scale, kind, symbol: '', customerHoldable, enabled });
+
+  return http.get(`${API}/v1/catalog/currencies`, () =>
+    HttpResponse.json([
+      row('EISLA', 2, 'internal', true, true),
+      row('USDT', 6, 'stablecoin', true, true),
+      row('USDC', 6, 'stablecoin', true, true),
+      row('CUP', 2, 'fiat', false, true),
+      row('MXN', 2, 'fiat', false, true),
+      row('USD', 2, 'fiat', false, false),
+    ]),
+  );
+}
