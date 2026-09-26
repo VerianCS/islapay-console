@@ -96,6 +96,7 @@ function Proposals({
     <table className="table">
       <thead>
         <tr>
+          <th>Qué</th>
           <th>Importe</th>
           <th>Destino</th>
           <th>Origen</th>
@@ -111,6 +112,7 @@ function Proposals({
           const mine = p.proposedBy === operator?.id;
           return (
             <tr key={p.id}>
+              <td>{KINDS[p.kind] ?? p.kind}</td>
               <td className="num">
                 {amount ? formatMoney(amount) : `${p.amount.amount} ${p.amount.currency}`}
               </td>
@@ -175,9 +177,15 @@ function Proposals({
   );
 }
 
+const KINDS: Readonly<Record<string, string>> = {
+  credit: 'Ingreso',
+  mint: 'Emisión E-ISLA',
+  burn: 'Retiro E-ISLA',
+};
+
 const TITLES = {
-  approve: 'Aprobar el ingreso',
-  reject: 'Rechazar el ingreso',
+  approve: 'Aprobar la propuesta',
+  reject: 'Rechazar la propuesta',
   withdraw: 'Retirar tu propuesta',
 } as const;
 

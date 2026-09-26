@@ -78,6 +78,12 @@ const MESSAGES: Readonly<Record<string, string>> = {
     'Hace falta un motivo de al menos cuatro caracteres, y el nivel 2 sólo se da a ' +
     'una cuenta con el teléfono probado.',
   account_frozen: 'La cuenta está congelada.',
+  not_creditable:
+    'El E-ISLA no se ingresa: no viene de fuera. Se acuña en «Emisión», contra reservas.',
+  reserve_insufficient:
+    'Las reservas en USDT y USDC no cubren esa emisión. Mira el margen en «Emisión».',
+  burn_exceeds_balance: 'La cuenta no tiene tanto E-ISLA para retirar.',
+  not_issuable: 'IslaPay sólo emite E-ISLA.',
   limit_exceeded: 'El importe supera lo que su nivel permite en un solo movimiento.',
   token_invalid: 'La sesión caducó. Vuelve a entrar.',
   unknown_destination:

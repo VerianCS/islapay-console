@@ -6,6 +6,7 @@ import { Card, Note } from './ui/components';
 import { SignIn } from './auth/SignIn';
 import { Funds } from './screens/Funds';
 import { Approvals } from './screens/Approvals';
+import { Issuance } from './screens/Issuance';
 import { Reconciliation } from './screens/Reconciliation';
 import { Catalogue } from './screens/Catalogue';
 import { P2PDesk } from './screens/P2PDesk';
@@ -30,6 +31,7 @@ const SCREENS: readonly {
 }[] = [
   { path: '/fondos', label: 'Fondos', needs: Can.treasuryRead, element: <Funds /> },
   { path: '/aprobaciones', label: 'Aprobaciones', needs: Can.treasuryRead, element: <Approvals /> },
+  { path: '/emision', label: 'Emisión', needs: Can.treasuryRead, element: <Issuance /> },
   { path: '/conciliacion', label: 'Conciliación', needs: Can.treasuryRead, element: <Reconciliation /> },
   { path: '/catalogo', label: 'Monedas y redes', needs: Can.catalogManage, element: <Catalogue /> },
   { path: '/p2p', label: 'Cola P2P', needs: Can.p2pRead, element: <P2PDesk />, end: true },
