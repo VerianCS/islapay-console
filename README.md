@@ -1,5 +1,9 @@
 # IslaPay · Consola de tesorería y mesa P2P
 
+> Documentación del sistema entero (arquitectura, seguridad, API, operación): `docs/` en
+> `islapay-net-backend`.
+
+
 Dónde está el dinero de la plataforma, si el escrow cuadra, y la única puerta
 por la que entra más.
 
