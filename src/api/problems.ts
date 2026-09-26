@@ -65,8 +65,26 @@ const MESSAGES: Readonly<Record<string, string>> = {
     'El servicio de identidad no responde. Vuelve a intentarlo en un momento.',
 
   forbidden:
-    'Tu cuenta no tiene el rol que pide esta pantalla (treasury-admin o ' +
-    'p2p-operator). Alguien con acceso a Keycloak tiene que concedértelo.',
+    'Tu cuenta no tiene el permiso que pide esto. Alguien con acceso a Keycloak ' +
+    'tiene que concederte el rol que lo da.',
+  own_proposal:
+    'Esta propuesta es tuya: la aprueba o la rechaza otra persona.',
+  not_your_proposal: 'Sólo quien hizo la propuesta puede retirarla.',
+  proposal_not_pending:
+    'Esa propuesta ya se decidió, se retiró o venció. La lista se ha actualizado.',
+  proposal_not_found: 'Esa propuesta no existe.',
+  account_not_found: 'No hay ninguna cuenta con ese correo.',
+  invalid_standing_change:
+    'Hace falta un motivo de al menos cuatro caracteres, y el nivel 2 sólo se da a ' +
+    'una cuenta con el teléfono probado.',
+  account_frozen: 'La cuenta está congelada.',
+  not_creditable:
+    'El E-ISLA no se ingresa: no viene de fuera. Se acuña en «Emisión», contra reservas.',
+  reserve_insufficient:
+    'Las reservas en USDT y USDC no cubren esa emisión. Mira el margen en «Emisión».',
+  burn_exceeds_balance: 'La cuenta no tiene tanto E-ISLA para retirar.',
+  not_issuable: 'IslaPay sólo emite E-ISLA.',
+  limit_exceeded: 'El importe supera lo que su nivel permite en un solo movimiento.',
   token_invalid: 'La sesión caducó. Vuelve a entrar.',
   unknown_destination:
     'Sólo se puede acreditar al float o al fondo de liquidación. El escrow ' +

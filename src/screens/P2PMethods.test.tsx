@@ -7,7 +7,7 @@ import { API, p2pCatalogue, server } from '../test/server';
 import captured from '../test/fixtures/p2p-admin-methods.json';
 import { P2PMethods } from './P2PMethods';
 
-const operator = signedIn(['p2p-operator']);
+const operator = signedIn(['p2p.read', 'p2p.manage']);
 
 /** `admin-methods.json`, exactly as the running backend wrote it. */
 function methods(body: object = captured) {

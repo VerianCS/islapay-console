@@ -13,6 +13,7 @@ import {
 import type { CurrencyDto, P2PAdminMethod, P2PSide } from '../api/queries';
 import { Money, formatMoney, parseMinorUnits } from '../money/money';
 import type { Currency } from '../money/money';
+import { Can, useCan } from '../auth/AuthProvider';
 import { Badge, Card, Empty, Failure, Field, Loading, Modal, Moment, Note } from '../ui/components';
 
 /**
@@ -25,6 +26,7 @@ import { Badge, Card, Empty, Failure, Field, Loading, Modal, Moment, Note } from
 export function P2PMethods() {
   const methods = useP2PMethods();
   const [creating, setCreating] = useState(false);
+  const manage = useCan(Can.p2pManage);
 
   return (
     <>
@@ -38,10 +40,19 @@ export function P2PMethods() {
           </p>
         </div>
         <div style={{ flex: 1 }} />
-        <button type="button" className="primary" onClick={() => setCreating(true)}>
-          Nuevo método
-        </button>
+        {manage && (
+          <button type="button" className="primary" onClick={() => setCreating(true)}>
+            Nuevo método
+          </button>
+        )}
       </div>
+
+      {!manage && (
+        <Note tone="warn">
+          Sólo lectura. Precios, límites e instrucciones los cambia quien tenga el rol
+          p2p-manager; quien liquida operaciones no fija el precio al que liquida.
+        </Note>
+      )}
 
       {methods.isError ? (
         <Card>
@@ -74,6 +85,7 @@ export function P2PMethods() {
 
 function MethodCard({ method }: { method: P2PAdminMethod }) {
   const toggle = useSetP2PAvailable();
+  const manage = useCan(Can.p2pManage);
   const priced = method.rates.length > 0;
 
   return (
@@ -87,6 +99,7 @@ function MethodCard({ method }: { method: P2PAdminMethod }) {
           <button
             type="button"
             style={{ marginLeft: 8 }}
+            hidden={!manage}
             disabled={toggle.isPending}
             onClick={() => toggle.mutate({ id: method.id, value: !method.available })}
           >
@@ -100,9 +113,13 @@ function MethodCard({ method }: { method: P2PAdminMethod }) {
         <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
           Cambiado por última vez: <Moment at={method.updatedAt} />
         </p>
-        <Limits method={method} />
-        <Rates method={method} />
-        <Instructions method={method} />
+        {/* One switch for every control below: a disabled fieldset disables
+            what it holds, so a read-only viewer cannot half-edit a price. */}
+        <fieldset disabled={!manage} style={{ border: 0, padding: 0, margin: 0 }}>
+          <Limits method={method} />
+          <Rates method={method} />
+          <Instructions method={method} />
+        </fieldset>
       </div>
     </Card>
   );

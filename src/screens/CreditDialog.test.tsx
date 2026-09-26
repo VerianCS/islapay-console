@@ -16,18 +16,30 @@ function acceptCredits(seen: Seen[]) {
     const body = (await request.json()) as Record<string, unknown>;
     seen.push({ body, idempotencyKey: request.headers.get('Idempotency-Key') });
 
-    return HttpResponse.json({
-      postingId: '0195f2ac-0000-7000-8000-000000000001',
-      destination: body['destination'],
-      amount: body['amount'],
-      balanceAfter: { amount: '1500.00', currency: 'EISLA' },
-      source: body['source'],
-      reason: body['reason'],
-      by: 'op-1',
-      at: '2026-09-22T14:05:09.123Z',
-      applied: true,
-    });
+    return HttpResponse.json(proposal(body), { status: 201 });
   });
+}
+
+/** What the server answers a credit with now: a proposal, not a posting. */
+function proposal(body: Record<string, unknown>) {
+  return {
+    id: '0195f2ac-0000-7000-8000-000000000009',
+    kind: 'credit',
+    status: 'pending',
+    destination: body['destination'],
+    amount: body['amount'],
+    source: body['source'],
+    reason: body['reason'],
+    proposedBy: 'op-1',
+    proposedByName: 'ana@islapay.cu',
+    proposedAt: '2026-09-22T14:05:09.123Z',
+    expiresAt: '2026-09-23T14:05:09.123Z',
+    decidedBy: null,
+    decidedByName: null,
+    decidedAt: null,
+    decisionNote: null,
+    postingId: null,
+  };
 }
 
 async function fill(
@@ -48,7 +60,7 @@ async function fill(
   }
 }
 
-describe('Ingresar dinero', () => {
+describe('Proponer un ingreso', () => {
   it('sends the wire shape the server expects, with a key', async () => {
     const seen: Seen[] = [];
     server.use(catalogue(), acceptCredits(seen));
@@ -58,7 +70,7 @@ describe('Ingresar dinero', () => {
     await screen.findByLabelText('Moneda');
 
     await fill(user, { amount: '1500', source: 'BANK:BANDEC', reason: 'Capital inicial' });
-    await user.click(screen.getByRole('button', { name: /registrar ingreso/i }));
+    await user.click(screen.getByRole('button', { name: /proponer ingreso/i }));
 
     await waitFor(() => expect(seen).toHaveLength(1));
 
@@ -87,14 +99,14 @@ describe('Ingresar dinero', () => {
     const first = renderWith(<CreditDialog open onClose={() => {}} />);
     await screen.findByLabelText('Moneda');
     await fill(user, { amount: '10', source: 'capital', reason: 'Primero' });
-    await user.click(screen.getByRole('button', { name: /registrar ingreso/i }));
+    await user.click(screen.getByRole('button', { name: /proponer ingreso/i }));
     await waitFor(() => expect(seen).toHaveLength(1));
     first.unmount();
 
     renderWith(<CreditDialog open onClose={() => {}} />);
     await screen.findByLabelText('Moneda');
     await fill(user, { amount: '10', source: 'capital', reason: 'Segundo' });
-    await user.click(screen.getByRole('button', { name: /registrar ingreso/i }));
+    await user.click(screen.getByRole('button', { name: /proponer ingreso/i }));
     await waitFor(() => expect(seen).toHaveLength(2));
 
     // Two intentional deposits of the same amount to the same place are two
@@ -114,7 +126,7 @@ describe('Ingresar dinero', () => {
     await fill(user, { amount: '1.005', source: 'capital', reason: 'Tres decimales' });
 
     expect(screen.getByText(/3 decimal places and the currency has 2/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /registrar ingreso/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /proponer ingreso/i })).toBeDisabled();
     expect(seen).toHaveLength(0);
   });
 
@@ -128,7 +140,7 @@ describe('Ingresar dinero', () => {
     await fill(user, { amount: '0', source: 'capital', reason: 'Nada' });
 
     expect(screen.getByText(/se asienta el inverso/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /registrar ingreso/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /proponer ingreso/i })).toBeDisabled();
   });
 
   it('will not send without a reason', async () => {
@@ -142,7 +154,7 @@ describe('Ingresar dinero', () => {
 
     // An unexplained credit is indistinguishable from a mistake six months
     // later, which is the only moment anybody reads it.
-    expect(screen.getByRole('button', { name: /registrar ingreso/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /proponer ingreso/i })).toBeDisabled();
   });
 
   it('shows the server’s refusal in words, not a code', async () => {
@@ -158,39 +170,24 @@ describe('Ingresar dinero', () => {
     await screen.findByLabelText('Moneda');
 
     await fill(user, { amount: '10', source: 'capital', reason: 'Prueba' });
-    await user.click(screen.getByRole('button', { name: /registrar ingreso/i }));
+    await user.click(screen.getByRole('button', { name: /proponer ingreso/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/float o al fondo/i);
   });
 
-  it('says plainly when a replay moved no money', async () => {
-    server.use(
-      catalogue(),
-      http.post(`${API}/v1/admin/treasury/credits`, async ({ request }) => {
-        const body = (await request.json()) as Record<string, unknown>;
-        return HttpResponse.json({
-          postingId: '0195f2ac-0000-7000-8000-000000000001',
-          destination: 'float',
-          amount: body['amount'],
-          balanceAfter: { amount: '1500.00', currency: 'EISLA' },
-          source: 'capital',
-          reason: 'Repetido',
-          by: 'op-1',
-          at: '2026-09-22T14:05:09.123Z',
-          applied: false,
-        });
-      }),
-    );
+  it('says plainly that nothing moved until somebody else approves', async () => {
+    const seen: Seen[] = [];
+    server.use(catalogue(), acceptCredits(seen));
     const user = userEvent.setup();
 
     renderWith(<CreditDialog open onClose={() => {}} />);
     await screen.findByLabelText('Moneda');
 
-    await fill(user, { amount: '10', source: 'capital', reason: 'Repetido' });
-    await user.click(screen.getByRole('button', { name: /registrar ingreso/i }));
+    await fill(user, { amount: '10', source: 'capital', reason: 'Aporte' });
+    await user.click(screen.getByRole('button', { name: /proponer ingreso/i }));
 
-    // "Registrado" with no more would let somebody believe the money moved
-    // twice, or that it did not move at all. It says which.
-    expect(await screen.findByText(/no se movió dinero por segunda vez/i)).toBeInTheDocument();
+    // "Registrado" would let somebody believe the money is in. It is not.
+    expect(await screen.findByText(/no se ha movido dinero todavía/i)).toBeInTheDocument();
+    expect(screen.getByText(/otra persona/i)).toBeInTheDocument();
   });
 });

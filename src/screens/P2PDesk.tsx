@@ -11,6 +11,7 @@ import {
 import type { P2PQueueItem } from '../api/queries';
 import { formatMoney } from '../money/money';
 import { Badge, Card, Empty, Failure, Field, Loading, Modal, Note } from '../ui/components';
+import { Can, useCan } from '../auth/AuthProvider';
 
 /**
  * The P2P desk: what waits on a person, and everything else by reference.
@@ -169,6 +170,9 @@ function Trades({
   showStatus: boolean;
 }) {
   const scales = useScales();
+  // Settling moves money; reading the queue does not. A manager or support
+  // sees the same rows without the buttons.
+  const settle = useCan(Can.p2pSettle);
 
   return (
     <div style={{ overflowX: 'auto' }}>
@@ -229,7 +233,7 @@ function Trades({
                   )}
                 </td>
                 <td style={{ whiteSpace: 'nowrap' }}>
-                  {sell && t.status === 'awaiting_payout' && (
+                  {settle && sell && t.status === 'awaiting_payout' && (
                     <>
                       <button type="button" className="primary" onClick={() => onAct({ kind: 'paid', trade: t })}>
                         Pagado
@@ -239,7 +243,7 @@ function Trades({
                       </button>
                     </>
                   )}
-                  {!sell && (t.status === 'awaiting_payment' || t.status === 'expired') && (
+                  {settle && !sell && (t.status === 'awaiting_payment' || t.status === 'expired') && (
                     <button type="button" className="primary" onClick={() => onAct({ kind: 'received', trade: t })}>
                       Recibido
                     </button>

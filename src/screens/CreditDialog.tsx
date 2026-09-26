@@ -1,8 +1,8 @@
 import { useEffect, useId, useState } from 'react';
 import { Failure, Field, Modal, Note } from '../ui/components';
 import { Money, formatMoney, parseMinorUnits } from '../money/money';
-import { useCatalogue, useCredit, useScales } from '../api/queries';
-import type { CreditReceipt } from '../api/queries';
+import { useCatalogue, useProposeCredit, useScales } from '../api/queries';
+import type { TreasuryProposal } from '../api/queries';
 
 const DESTINATIONS = [
   {
@@ -16,10 +16,12 @@ const DESTINATIONS = [
 ] as const;
 
 /**
- * The only door money enters by, as a form.
+ * The only door money enters by, as a form — and only half of it.
  *
  * Everything else in IslaPay moves money that is already there. This raises
  * the total, so it asks for more than the amount: where it came from, and why.
+ * And it moves nothing by itself: what it makes is a proposal, which somebody
+ * other than whoever made it approves in «Aprobaciones».
  * Both are required by the server and both are required here, early, because a
  * form that lets somebody type an amount and then refuses on submit has wasted
  * the one moment they were paying attention.
@@ -27,7 +29,7 @@ const DESTINATIONS = [
 export function CreditDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const catalogue = useCatalogue();
   const scales = useScales();
-  const credit = useCredit();
+  const credit = useProposeCredit();
   const formId = useId();
 
   const [destination, setDestination] = useState<string>('float');
@@ -35,7 +37,7 @@ export function CreditDialog({ open, onClose }: { open: boolean; onClose: () => 
   const [amount, setAmount] = useState('');
   const [source, setSource] = useState('');
   const [reason, setReason] = useState('');
-  const [receipt, setReceipt] = useState<CreditReceipt | null>(null);
+  const [receipt, setReceipt] = useState<TreasuryProposal | null>(null);
 
   // Whatever the catalogue lists first and a customer can hold. Chosen rather
   // than left blank so the common case is one field shorter, and re-chosen
@@ -94,15 +96,13 @@ export function CreditDialog({ open, onClose }: { open: boolean; onClose: () => 
 
   if (receipt !== null) {
     const credited = scales.find(receipt.amount.currency);
-    const after = scales.find(receipt.balanceAfter.currency);
 
     return (
-      <Modal open={open} onClose={onClose} title="Ingreso registrado">
+      <Modal open={open} onClose={onClose} title="Propuesta creada">
         <div className="dialog__body">
           <Note tone="ok">
-            {receipt.applied
-              ? 'El asiento se escribió.'
-              : 'Ya estaba registrado con esa clave: no se movió dinero por segunda vez.'}
+            No se ha movido dinero todavía. Otra persona con el rol de aprobar tiene que
+            aceptarla en «Aprobaciones»; si nadie lo hace en 24 horas, vence.
           </Note>
           <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 16px' }}>
             <dt className="muted">Importe</dt>
@@ -113,19 +113,13 @@ export function CreditDialog({ open, onClose }: { open: boolean; onClose: () => 
             </dd>
             <dt className="muted">Destino</dt>
             <dd style={{ margin: 0 }}>{receipt.destination}</dd>
-            <dt className="muted">Saldo después</dt>
-            <dd className="num" style={{ margin: 0 }}>
-              {after
-                ? formatMoney(Money.parse(receipt.balanceAfter, scales))
-                : `${receipt.balanceAfter.amount} ${receipt.balanceAfter.currency}`}
-            </dd>
             <dt className="muted">Origen</dt>
             <dd className="num" style={{ margin: 0 }}>
               {receipt.source}
             </dd>
-            <dt className="muted">Asiento</dt>
+            <dt className="muted">Propuesta</dt>
             <dd className="num" style={{ margin: 0, fontSize: 12 }}>
-              {receipt.postingId}
+              {receipt.id}
             </dd>
           </dl>
         </div>
@@ -142,8 +136,8 @@ export function CreditDialog({ open, onClose }: { open: boolean; onClose: () => 
     <Modal
       open={open}
       onClose={onClose}
-      title="Ingresar dinero"
-      subtitle="Doble entrada contra el espejo de donde vino. Queda firmado con tu cuenta."
+      title="Proponer un ingreso"
+      subtitle="Doble entrada contra el espejo de donde vino, cuando otra persona lo apruebe. Queda firmado con tu cuenta."
     >
       <form id={formId} onSubmit={submit}>
         <div className="dialog__body">
@@ -242,7 +236,7 @@ export function CreditDialog({ open, onClose }: { open: boolean; onClose: () => 
             Cancelar
           </button>
           <button type="submit" className="primary" disabled={!complete || credit.isPending}>
-            {credit.isPending ? 'Registrando…' : 'Registrar ingreso'}
+            {credit.isPending ? 'Proponiendo…' : 'Proponer ingreso'}
           </button>
         </div>
       </form>
