@@ -30,6 +30,47 @@ async function lookUp(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('Cuentas', () => {
+  it('shows what the customer was told, and whether they read it', async () => {
+    server.use(
+      http.get(`${API}/v1/admin/compliance/accounts`, () => HttpResponse.json(standing())),
+      http.get(`${API}/v1/admin/notifications/users/u-1`, () =>
+        HttpResponse.json({
+          items: [
+            {
+              id: 'n-1',
+              type: 'account.frozen',
+              category: 'account',
+              title: 'Tu cuenta está en revisión',
+              body: 'Por ahora no puedes enviar, convertir ni comprar.',
+              data: {},
+              createdAt: '2026-09-26T10:00:00.000Z',
+            },
+            {
+              id: 'n-2',
+              type: 'transfer.received',
+              category: 'movements',
+              title: 'Recibiste 12.50 EISLA',
+              body: 'Ana Pérez te envió 12.50 EISLA.',
+              data: {},
+              createdAt: '2026-09-25T10:00:00.000Z',
+              readAt: '2026-09-25T11:00:00.000Z',
+            },
+          ],
+          unread: 1,
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+
+    renderWith(<Accounts />, signedIn(['support.read']));
+    await lookUp(user);
+
+    const table = (await screen.findByText('Tu cuenta está en revisión')).closest('table')!;
+    expect(within(table).getByText('Recibiste 12.50 EISLA')).toBeInTheDocument();
+    // Unread says so in a word.
+    expect(within(table).getByText('No')).toBeInTheDocument();
+  });
+
   it('freezes with a reason, and shows the account frozen', async () => {
     const seen: unknown[] = [];
     server.use(

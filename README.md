@@ -124,8 +124,9 @@ falta el segundo factor, la consola lo dice en vez de mostrar pantallas vacías.
 | Monedas y redes | `catalog.manage` | |
 | Cola P2P | `p2p.read` | Pagado/Recibido/Falló con `p2p.settle` |
 | Métodos P2P | `p2p.read` | Editar con `p2p.manage`; si no, sólo lectura |
-| Cuentas | `support.read` | Congelar, descongelar y nivel con `compliance.act` |
+| Cuentas | `support.read` | Congelar, descongelar y nivel con `compliance.act`; debajo, las notificaciones que recibió el cliente y si las leyó |
 | Auditoría | `audit.read` | |
+| Avisos | `notifications.send` (rol `communications`) | Enviar a todos o a una cuenta, con vista previa y confirmación; historial de lo enviado |
 
 **E-ISLA se emite, no se ingresa.** «Emisión» enseña lo que hay en
 circulación, las reservas en USDT y USDC que la cubren y el margen; emitir y

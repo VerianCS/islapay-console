@@ -152,6 +152,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `audit.read`. */
         get: {
             parameters: {
                 query?: {
@@ -483,6 +484,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `catalog.manage`. */
         get: {
             parameters: {
                 query?: never;
@@ -528,6 +530,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /** @description Requires the permission `catalog.manage`. */
         put: {
             parameters: {
                 query: {
@@ -574,6 +577,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /** @description Requires the permission `catalog.manage`. */
         put: {
             parameters: {
                 query: {
@@ -620,6 +624,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /** @description Requires the permission `catalog.manage`. */
         put: {
             parameters: {
                 query: {
@@ -1003,6 +1008,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `support.read`. */
         get: {
             parameters: {
                 query: {
@@ -1049,6 +1055,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `support.read`. */
         get: {
             parameters: {
                 query?: never;
@@ -1097,6 +1104,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Requires the permission `compliance.act`. */
         post: {
             parameters: {
                 query?: never;
@@ -1147,6 +1155,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Requires the permission `compliance.act`. */
         post: {
             parameters: {
                 query?: never;
@@ -1196,6 +1205,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /** @description Requires the permission `compliance.act`. */
         put: {
             parameters: {
                 query?: never;
@@ -1929,6 +1939,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `p2p.read`. */
         get: {
             parameters: {
                 query?: {
@@ -1975,6 +1986,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `p2p.read`. */
         get: {
             parameters: {
                 query?: {
@@ -2025,6 +2037,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Requires the permission `p2p.settle`. */
         post: {
             parameters: {
                 query?: never;
@@ -2075,6 +2088,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Requires the permission `p2p.settle`. */
         post: {
             parameters: {
                 query?: never;
@@ -2125,6 +2139,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Requires the permission `p2p.settle`. */
         post: {
             parameters: {
                 query?: never;
@@ -2174,6 +2189,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /** @description Requires the permission `p2p.manage`. */
         put: {
             parameters: {
                 query?: never;
@@ -2219,6 +2235,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `p2p.read`. */
         get: {
             parameters: {
                 query?: never;
@@ -2249,6 +2266,7 @@ export interface paths {
             };
         };
         put?: never;
+        /** @description Requires the permission `p2p.manage`. */
         post: {
             parameters: {
                 query?: never;
@@ -2301,6 +2319,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /** @description Requires the permission `p2p.manage`. */
         patch: {
             parameters: {
                 query?: never;
@@ -2346,6 +2365,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /** @description Requires the permission `p2p.manage`. */
         put: {
             parameters: {
                 query: {
@@ -2392,6 +2412,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
+        /** @description Requires the permission `p2p.manage`. */
         put: {
             parameters: {
                 query?: never;
@@ -2667,6 +2688,509 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NotificationPageDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/notifications/unread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UnreadCountDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/notifications/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/notifications/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NotificationPreferencesDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferencesUpdate"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NotificationPreferencesDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeviceDto"][];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["DeviceRegistration"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DeviceDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/devices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/notifications/broadcasts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Requires the permission `notifications.send`. */
+        get: {
+            parameters: {
+                query?: {
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BroadcastDto"][];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Requires the permission `notifications.send`. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BroadcastRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BroadcastDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/notifications/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Requires the permission `support.read`. */
+        get: {
+            parameters: {
+                query?: {
+                    cursor?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["NotificationPageDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/treasury/balances": {
         parameters: {
             query?: never;
@@ -2674,6 +3198,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `treasury.read`. */
         get: {
             parameters: {
                 query?: never;
@@ -2718,6 +3243,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `treasury.read`. */
         get: {
             parameters: {
                 query?: never;
@@ -2762,6 +3288,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `treasury.read`. */
         get: {
             parameters: {
                 query?: {
@@ -2814,6 +3341,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Requires the permission `treasury.propose`. */
         post: {
             parameters: {
                 query?: never;
@@ -2860,6 +3388,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `treasury.read`. */
         get: {
             parameters: {
                 query?: never;
@@ -2906,6 +3435,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Requires the permission `treasury.propose`. */
         post: {
             parameters: {
                 query?: never;
@@ -2954,6 +3484,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Requires the permission `treasury.propose`. */
         post: {
             parameters: {
                 query?: never;
@@ -3000,6 +3531,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `treasury.read`. */
         get: {
             parameters: {
                 query?: {
@@ -3047,6 +3579,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Requires the permission `treasury.read`. */
         get: {
             parameters: {
                 query?: never;
@@ -3095,6 +3628,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Requires the permission `treasury.approve`. */
         post: {
             parameters: {
                 query?: never;
@@ -3145,6 +3679,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Requires the permission `treasury.approve`. */
         post: {
             parameters: {
                 query?: never;
@@ -3195,6 +3730,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Requires the permission `treasury.propose`. */
         post: {
             parameters: {
                 query?: never;
@@ -3307,6 +3843,35 @@ export interface components {
         AuthSessionResponse: {
             tokens: components["schemas"]["TokenPair"];
             user: components["schemas"]["UserDto"];
+        };
+        BroadcastDto: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            body: string;
+            audience: string;
+            sentBy: string;
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            sentAt: string;
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            expiresAt: null | string;
+            /** Format: int32 */
+            devices: number;
+        };
+        BroadcastRequest: {
+            title: string;
+            body: string;
+            email?: null | string;
+            /** Format: int32 */
+            days?: null | number;
         };
         ConversionReceipt: {
             /** Format: uuid */
@@ -3425,6 +3990,27 @@ export interface components {
             confirmations: number;
             memoRequired: boolean;
         };
+        DeviceDto: {
+            /** Format: uuid */
+            id: string;
+            platform: string;
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            registeredAt: string;
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            lastSeenAt: string;
+        };
+        DeviceRegistration: {
+            token: string;
+            platform: string;
+        };
         EscrowClaimDto: {
             context: string;
             held: components["schemas"]["Money"];
@@ -3541,6 +4127,49 @@ export interface components {
             /** Format: int32 */
             confirmations: number;
             memoRequired: boolean;
+        };
+        NotificationDto: {
+            /** Format: uuid */
+            id: string;
+            type: string;
+            category: string;
+            title: string;
+            body: string;
+            data: {
+                [key: string]: string;
+            };
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            createdAt: string;
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            readAt: null | string;
+        };
+        NotificationPageDto: {
+            items: components["schemas"]["NotificationDto"][];
+            /** Format: int32 */
+            unread: number;
+            next: null | string;
+        };
+        NotificationPreferencesDto: {
+            locale: string;
+            push: boolean;
+            movements: boolean;
+            trades: boolean;
+            news: boolean;
+        };
+        NotificationPreferencesUpdate: {
+            locale?: null | string;
+            push?: null | boolean;
+            movements?: null | boolean;
+            trades?: null | boolean;
+            news?: null | boolean;
         };
         OrderDto: {
             id: string;
@@ -3901,6 +4530,10 @@ export interface components {
             balanced: boolean;
             currencies: components["schemas"]["EscrowReconciliationDto"][];
         };
+        UnreadCountDto: {
+            /** Format: int32 */
+            count: number;
+        };
         UserDto: {
             id: string;
             name: string;
@@ -3935,6 +4568,8 @@ export type SchemaAccountStandingDto = components['schemas']['AccountStandingDto
 export type SchemaApiProblem = components['schemas']['ApiProblem'];
 export type SchemaAuditEntryDto = components['schemas']['AuditEntryDto'];
 export type SchemaAuthSessionResponse = components['schemas']['AuthSessionResponse'];
+export type SchemaBroadcastDto = components['schemas']['BroadcastDto'];
+export type SchemaBroadcastRequest = components['schemas']['BroadcastRequest'];
 export type SchemaConversionReceipt = components['schemas']['ConversionReceipt'];
 export type SchemaConversionRequest = components['schemas']['ConversionRequest'];
 export type SchemaCreditRequest = components['schemas']['CreditRequest'];
@@ -3949,6 +4584,8 @@ export type SchemaCursorPageOfTransactionDto = components['schemas']['CursorPage
 export type SchemaDepositAddressDto = components['schemas']['DepositAddressDto'];
 export type SchemaDepositDto = components['schemas']['DepositDto'];
 export type SchemaDepositNetworkDto = components['schemas']['DepositNetworkDto'];
+export type SchemaDeviceDto = components['schemas']['DeviceDto'];
+export type SchemaDeviceRegistration = components['schemas']['DeviceRegistration'];
 export type SchemaEscrowClaimDto = components['schemas']['EscrowClaimDto'];
 export type SchemaEscrowReconciliationDto = components['schemas']['EscrowReconciliationDto'];
 export type SchemaHealthReport = components['schemas']['HealthReport'];
@@ -3961,6 +4598,10 @@ export type SchemaListingDto = components['schemas']['ListingDto'];
 export type SchemaLoginRequest = components['schemas']['LoginRequest'];
 export type SchemaMoney = components['schemas']['Money'];
 export type SchemaNetworkDto = components['schemas']['NetworkDto'];
+export type SchemaNotificationDto = components['schemas']['NotificationDto'];
+export type SchemaNotificationPageDto = components['schemas']['NotificationPageDto'];
+export type SchemaNotificationPreferencesDto = components['schemas']['NotificationPreferencesDto'];
+export type SchemaNotificationPreferencesUpdate = components['schemas']['NotificationPreferencesUpdate'];
 export type SchemaOrderDto = components['schemas']['OrderDto'];
 export type SchemaOtpResendResponse = components['schemas']['OtpResendResponse'];
 export type SchemaOtpVerifyRequest = components['schemas']['OtpVerifyRequest'];
@@ -3997,6 +4638,7 @@ export type SchemaTreasuryBalancesDto = components['schemas']['TreasuryBalancesD
 export type SchemaTreasuryDecisionRequest = components['schemas']['TreasuryDecisionRequest'];
 export type SchemaTreasuryProposalDto = components['schemas']['TreasuryProposalDto'];
 export type SchemaTreasuryReconciliationDto = components['schemas']['TreasuryReconciliationDto'];
+export type SchemaUnreadCountDto = components['schemas']['UnreadCountDto'];
 export type SchemaUserDto = components['schemas']['UserDto'];
 export type SchemaWalletResponse = components['schemas']['WalletResponse'];
 export type $defs = Record<string, never>;

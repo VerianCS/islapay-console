@@ -13,6 +13,7 @@ import { P2PDesk } from './screens/P2PDesk';
 import { P2PMethods } from './screens/P2PMethods';
 import { Accounts } from './screens/Accounts';
 import { Audit } from './screens/Audit';
+import { Announcements } from './screens/Announcements';
 
 /**
  * Every screen, and the one permission that opens it.
@@ -38,6 +39,7 @@ const SCREENS: readonly {
   { path: '/p2p/metodos', label: 'Métodos P2P', needs: Can.p2pRead, element: <P2PMethods /> },
   { path: '/cuentas', label: 'Cuentas', needs: Can.supportRead, element: <Accounts /> },
   { path: '/auditoria', label: 'Auditoría', needs: Can.auditRead, element: <Audit /> },
+  { path: '/avisos', label: 'Avisos', needs: Can.notificationsSend, element: <Announcements /> },
 ];
 
 export function App() {

@@ -32,6 +32,10 @@ export type P2PMethodCreate = Schema<'P2PMethodCreate'>;
 export type P2PMethodUpdate = Schema<'P2PMethodUpdate'>;
 export type P2PRateUpdate = Schema<'P2PRateUpdate'>;
 export type P2PSide = Schema<'P2PSide'>;
+export type NotificationItem = Schema<'NotificationDto'>;
+export type NotificationPage = Schema<'NotificationPageDto'>;
+export type Broadcast = Schema<'BroadcastDto'>;
+export type BroadcastRequest = Schema<'BroadcastRequest'>;
 
 /** The client, rebuilt only when the session object itself changes. */
 function useApi() {
@@ -613,4 +617,53 @@ export function readMoney(
   } catch {
     return null;
   }
+}
+
+/** Announcements sent, newest first — to everybody and to one account alike. */
+export function useBroadcasts(): UseQueryResult<readonly Broadcast[]> {
+  const api = useApi();
+
+  return useQuery({
+    queryKey: ['notifications', 'broadcasts'],
+    queryFn: () => unwrap(api.GET('/v1/admin/notifications/broadcasts', { params: { query: { limit: 50 } } })),
+  });
+}
+
+/**
+ * Sends an announcement.
+ *
+ * A fresh key per press, like a credit: the key protects against one press
+ * arriving twice, not against somebody sending the same words again on
+ * purpose next week.
+ */
+export function useSendBroadcast(): UseMutationResult<Broadcast, Error, BroadcastRequest> {
+  const api = useApi();
+  const cache = useQueryClient();
+
+  return useMutation({
+    mutationFn: (body) =>
+      unwrap(
+        api.POST('/v1/admin/notifications/broadcasts', {
+          body,
+          headers: { 'Idempotency-Key': newIdempotencyKey() },
+        }),
+      ),
+    onSuccess: () => cache.invalidateQueries({ queryKey: ['notifications'] }),
+  });
+}
+
+/** What one customer was told, for the call that begins «nunca me avisaron». */
+export function useUserNotifications(userId: string | null): UseQueryResult<NotificationPage> {
+  const api = useApi();
+
+  return useQuery({
+    queryKey: ['notifications', 'user', userId],
+    enabled: userId !== null,
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/admin/notifications/users/{userId}', {
+          params: { path: { userId: userId! }, query: { limit: 20 } },
+        }),
+      ),
+  });
 }

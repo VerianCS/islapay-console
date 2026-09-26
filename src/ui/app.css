@@ -287,6 +287,14 @@ textarea {
   color: var(--ink);
 }
 
+input[type='radio'],
+input[type='checkbox'] {
+  width: auto;
+  padding: 0;
+  margin: 0 6px 0 0;
+  vertical-align: middle;
+}
+
 input[aria-invalid='true'] {
   border-color: var(--alarm);
 }

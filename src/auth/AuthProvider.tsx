@@ -24,6 +24,7 @@ export const Can = {
   complianceRead: 'compliance.read',
   complianceAct: 'compliance.act',
   auditRead: 'audit.read',
+  notificationsSend: 'notifications.send',
 } as const;
 
 export type Permission = (typeof Can)[keyof typeof Can];

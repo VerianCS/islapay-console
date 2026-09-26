@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useAccountLookup, useChangeStanding } from '../api/queries';
+import { useAccountLookup, useChangeStanding, useUserNotifications } from '../api/queries';
 import type { AccountStanding } from '../api/queries';
 import { Can, useCan } from '../auth/AuthProvider';
-import { Badge, Card, Failure, Field, Loading, Modal, Moment, Note } from '../ui/components';
+import { Badge, Card, Empty, Failure, Field, Loading, Modal, Moment, Note } from '../ui/components';
 
 const LEVELS: Readonly<Record<number, string>> = {
   0: 'Sin verificar — el teléfono no está probado',
@@ -69,7 +69,10 @@ export function Accounts() {
       ) : account.data === undefined ? (
         <Loading what="la cuenta" />
       ) : (
-        <Standing account={account.data} />
+        <>
+          <Standing account={account.data} />
+          <Told userId={account.data.userId} />
+        </>
       )}
     </>
   );
@@ -229,3 +232,53 @@ function ChangeDialog({
   );
 }
 
+
+/**
+ * What the customer was told, newest first — the notifications in their app.
+ *
+ * For the call that begins «nunca me avisaron»: whether the notice was
+ * written, when, in what words, and whether they opened it.
+ */
+function Told({ userId }: { userId: string }) {
+  const told = useUserNotifications(userId);
+
+  return (
+    <Card title="Notificaciones que recibió">
+      {told.isError ? (
+        <div className="card__body">
+          <Failure error={told.error} />
+        </div>
+      ) : told.data === undefined ? (
+        <Loading what="las notificaciones" />
+      ) : told.data.items.length === 0 ? (
+        <Empty>Ninguna todavía.</Empty>
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Cuándo</th>
+              <th>Notificación</th>
+              <th>Leída</th>
+            </tr>
+          </thead>
+          <tbody>
+            {told.data.items.map((n) => (
+              <tr key={n.id}>
+                <td>
+                  <Moment at={n.createdAt} />
+                </td>
+                <td>
+                  <strong>{n.title}</strong>
+                  <div className="muted" style={{ fontSize: 13 }}>
+                    {n.body}
+                  </div>
+                </td>
+                <td>{n.readAt ? <Moment at={n.readAt} /> : <Badge tone="quiet">No</Badge>}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </Card>
+  );
+}

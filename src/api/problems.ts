@@ -122,6 +122,12 @@ const MESSAGES: Readonly<Record<string, string>> = {
     'La operación ya no está abierta: otra persona la cerró, o el cliente la ' +
     'canceló. Se actualiza la lista.',
   wrong_side: 'Esa acción es del otro sentido: «pagado» es de una venta, «recibido» de una compra.',
+
+  // Avisos.
+  invalid_broadcast:
+    'El aviso necesita un título de hasta 80 caracteres, un texto de hasta 500 y ' +
+    'una duración entre 1 y 90 días.',
+  recipient_not_found: 'No hay ninguna cuenta con ese correo.',
 };
 
 export function describe(error: unknown): string {
