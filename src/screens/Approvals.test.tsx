@@ -55,7 +55,7 @@ describe('Aprobaciones', () => {
     expect(row).toHaveTextContent('1,500.00');
     await user.click(within(row).getByRole('button', { name: 'Aprobar' }));
 
-    const dialog = screen.getByRole('dialog', { name: 'Aprobar el ingreso' });
+    const dialog = screen.getByRole('dialog', { name: 'Aprobar la propuesta' });
     expect(dialog).toHaveTextContent(/compruébalo contra el extracto/i);
     await user.click(within(dialog).getByRole('button', { name: /aprobar y asentar/i }));
 
@@ -83,7 +83,7 @@ describe('Aprobaciones', () => {
     const row = (await screen.findByText('Aporte de septiembre')).closest('tr')!;
     await user.click(within(row).getByRole('button', { name: 'Rechazar' }));
 
-    const dialog = screen.getByRole('dialog', { name: 'Rechazar el ingreso' });
+    const dialog = screen.getByRole('dialog', { name: 'Rechazar la propuesta' });
     const send = within(dialog).getByRole('button', { name: 'Rechazar' });
     expect(send).toBeDisabled();
     await user.type(within(dialog).getByLabelText('Motivo del rechazo'), 'El extracto dice 1400');

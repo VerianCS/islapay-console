@@ -18,6 +18,8 @@ export type Reconciliation = Schema<'TreasuryReconciliationDto'>;
 export type EscrowRow = Schema<'EscrowReconciliationDto'>;
 export type CreditRequest = Schema<'CreditRequest'>;
 export type TreasuryProposal = Schema<'TreasuryProposalDto'>;
+export type Issuance = Schema<'IssuanceDto'>;
+export type IssuanceRequest = Schema<'IssuanceRequest'>;
 export type AuditEntry = Schema<'AuditEntryDto'>;
 export type AuditPage = Schema<'CursorPageOfAuditEntryDto'>;
 export type AccountStanding = Schema<'AccountStandingDto'>;
@@ -191,6 +193,43 @@ export function useProposeCredit(): UseMutationResult<TreasuryProposal, Error, C
           body,
           headers: { 'Idempotency-Key': newIdempotencyKey() },
         }),
+      ),
+    onSuccess: () => cache.invalidateQueries({ queryKey: ['treasury'] }),
+  });
+}
+
+/** How much E-ISLA exists, and what backs it. */
+export function useIssuance(): UseQueryResult<Issuance> {
+  const api = useApi();
+
+  return useQuery({
+    queryKey: ['treasury', 'issuance'],
+    refetchOnWindowFocus: true,
+    queryFn: () => unwrap(api.GET('/v1/admin/treasury/issuance', {})),
+  });
+}
+
+/** Proposes a mint or a burn. Moves nothing until somebody else approves. */
+export function useProposeIssuance(): UseMutationResult<
+  TreasuryProposal,
+  Error,
+  { kind: 'mint' | 'burn'; body: IssuanceRequest }
+> {
+  const api = useApi();
+  const cache = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ kind, body }) =>
+      unwrap(
+        kind === 'mint'
+          ? api.POST('/v1/admin/treasury/mints', {
+              body,
+              headers: { 'Idempotency-Key': newIdempotencyKey() },
+            })
+          : api.POST('/v1/admin/treasury/burns', {
+              body,
+              headers: { 'Idempotency-Key': newIdempotencyKey() },
+            }),
       ),
     onSuccess: () => cache.invalidateQueries({ queryKey: ['treasury'] }),
   });

@@ -116,11 +116,17 @@ falta el segundo factor, la consola lo dice en vez de mostrar pantallas vacías.
 |---|---|---|
 | Fondos, Conciliación | `treasury.read` | «Proponer ingreso» con `treasury.propose` |
 | Aprobaciones | `treasury.read` | Aprobar/Rechazar con `treasury.approve`, nunca lo propio; Retirar lo propio |
+| Emisión | `treasury.read` | «Proponer emisión» y «Proponer retiro» de E-ISLA con `treasury.propose` |
 | Monedas y redes | `catalog.manage` | |
 | Cola P2P | `p2p.read` | Pagado/Recibido/Falló con `p2p.settle` |
 | Métodos P2P | `p2p.read` | Editar con `p2p.manage`; si no, sólo lectura |
 | Cuentas | `support.read` | Congelar, descongelar y nivel con `compliance.act` |
 | Auditoría | `audit.read` | |
+
+**E-ISLA se emite, no se ingresa.** «Emisión» enseña lo que hay en
+circulación, las reservas en USDT y USDC que la cubren y el margen; emitir y
+retirar son propuestas como un ingreso, y una emisión que las reservas no
+cubren se rechaza al aprobarla.
 
 **Un ingreso lo hacen dos personas.** «Proponer ingreso» no mueve dinero: crea
 una propuesta que otra persona aprueba en «Aprobaciones» (o rechaza, con
