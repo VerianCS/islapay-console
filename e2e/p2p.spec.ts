@@ -3,7 +3,8 @@ import { expect, test } from '@playwright/test';
 /**
  * The P2P desk, against the real host.
  *
- * Needs what `console.spec.ts` needs, plus an account with `p2p-operator` and
+ * Needs the dev server and host, plus an account with `p2p-operator` and
+ * `p2p-manager` (step 4 publishes a price, which settling does not allow), and
  * two trades waiting on it — a sale in the queue, and a buy the customer let
  * expire. They are made outside this file because making them takes a
  * customer with a verified phone and money in the wallet, which is the app's

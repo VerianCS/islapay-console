@@ -1,8 +1,22 @@
 import { expect, test } from '@playwright/test';
 
-const EMAIL = 'tesorera@islapay.cu';
-const PASSWORD = 'Correct-Horse-9';
+/**
+ * Two people, because a credit takes two: one proposes, the other approves.
+ * Each is a JSON `{"email","password"}` whose account holds the role —
+ * `treasury-operator` and `treasury-approver` — and nothing that conflicts
+ * with it. The operator also needs `catalog-admin` for step 7.
+ *
+ *     TREASURY_OPERATOR='{"email": …}' TREASURY_APPROVER='{"email": …}' npm run e2e -- console
+ */
+type Credentials = { email: string; password: string };
+const fallback = { email: 'tesorera@islapay.cu', password: 'Correct-Horse-9' };
+const OPERATOR = JSON.parse(process.env.TREASURY_OPERATOR ?? JSON.stringify(fallback)) as Credentials;
+const APPROVER = JSON.parse(process.env.TREASURY_APPROVER ?? 'null') as Credentials | null;
+const EMAIL = OPERATOR.email;
+const PASSWORD = OPERATOR.password;
 const SHOTS = process.env.SHOTS ?? 'e2e/shots';
+
+test.skip(APPROVER === null, 'TREASURY_APPROVER no está: un ingreso necesita a una segunda persona');
 
 test('la consola, contra el host de verdad', async ({ page }) => {
   const problems: string[] = [];
@@ -38,7 +52,7 @@ test('la consola, contra el host de verdad', async ({ page }) => {
   const stored = await page.evaluate(() => JSON.stringify({ ...sessionStorage, ...localStorage }));
   expect(stored).not.toContain(PASSWORD);
   await expect(page.getByRole('heading', { name: 'Fondos' })).toBeVisible();
-  await expect(page.getByText('tesorera@islapay.cu')).toBeVisible();
+  await expect(page.getByText('treasury-operator')).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/2-fondos-vacio.png`, fullPage: true });
 
   // 3. Put money in.
@@ -50,16 +64,47 @@ test('la consola, contra el host de verdad', async ({ page }) => {
   const mirror = `bank:e2e${Date.now()}`;
   const reason = `Capital de prueba ${Date.now()}`;
 
-  await page.getByRole('button', { name: /ingresar dinero/i }).click();
+  await page.getByRole('button', { name: /proponer ingreso/i }).click();
   await page.getByLabel('Importe').fill('2500.00');
   await page.getByLabel('Origen').fill(mirror);
   await page.getByLabel('Motivo').fill(reason);
   await page.screenshot({ path: `${SHOTS}/3-ingreso.png`, fullPage: true });
 
-  await page.getByRole('button', { name: /registrar ingreso/i }).click();
-  await expect(page.getByText(/el asiento se escribió/i)).toBeVisible({ timeout: 15000 });
-  await page.screenshot({ path: `${SHOTS}/4-recibo.png`, fullPage: true });
+  await page.getByRole('button', { name: /proponer ingreso/i }).last().click();
+  await expect(page.getByText(/no se ha movido dinero todavía/i)).toBeVisible({ timeout: 15000 });
+  await page.screenshot({ path: `${SHOTS}/4-propuesta.png`, fullPage: true });
   await page.getByRole('button', { name: /^cerrar$/i }).click();
+
+  // Nothing moved: the mirror is not on the funds yet.
+  await expect(page.getByRole('row', { name: new RegExp(mirror) })).toHaveCount(0);
+
+  // The proposer sees it waiting, and cannot approve it.
+  await page.getByRole('link', { name: 'Aprobaciones' }).click();
+  const waiting = page.getByRole('row', { name: new RegExp(reason) });
+  await expect(waiting).toContainText(/tuya: la aprueba otra persona/i);
+  await expect(waiting.getByRole('button', { name: 'Aprobar' })).toHaveCount(0);
+  await page.screenshot({ path: `${SHOTS}/4b-esperando.png`, fullPage: true });
+
+  // 3b. The second person approves it.
+  await page.getByRole('button', { name: /^salir$/i }).click();
+  await page.getByLabel('Correo').fill(APPROVER!.email);
+  await page.getByLabel('Contraseña').fill(APPROVER!.password);
+  await page.getByRole('button', { name: /^entrar$/i }).click();
+  await page.getByRole('link', { name: 'Aprobaciones' }).click();
+  const theirs = page.getByRole('row', { name: new RegExp(reason) });
+  await theirs.getByRole('button', { name: 'Aprobar' }).click();
+  await page.screenshot({ path: `${SHOTS}/4c-aprobar.png`, fullPage: true });
+  await page.getByRole('button', { name: /aprobar y asentar/i }).click();
+  await expect(page.getByRole('row', { name: new RegExp(reason) }).first()).toContainText('Aprobada');
+  await page.screenshot({ path: `${SHOTS}/4d-aprobada.png`, fullPage: true });
+
+  // Back to the proposer for the rest.
+  await page.getByRole('button', { name: /^salir$/i }).click();
+  await page.getByLabel('Correo').fill(EMAIL);
+  await page.getByLabel('Contraseña').fill(PASSWORD);
+  await page.getByRole('button', { name: /^entrar$/i }).click();
+  await page.getByRole('link', { name: 'Fondos' }).click();
+  await page.waitForURL(/\/fondos$/);
 
   // 4. Both halves of one posting, on the same screen. The mirror fell by
   // exactly what the float rose by, which is what makes this an accounting

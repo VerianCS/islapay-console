@@ -26,9 +26,13 @@ dotnet run --project src/IslaPay.Host
 ```
 
 Se entra con el correo y la contraseña de una cuenta normal —la misma que en la
-app— que tenga el rol de realm `treasury-admin`. El script crea el rol pero no
-lo concede: hay que dárselo a la cuenta desde la consola de administración de
-Keycloak, o se entra y no se ve nada.
+app— que tenga algún rol de personal (`treasury-operator`, `treasury-approver`,
+`p2p-operator`, `p2p-manager`, `compliance`, `support`, `auditor`,
+`catalog-admin`). El script crea los roles pero no los concede: hay que
+dárselos a la cuenta desde la consola de administración de Keycloak, o se entra
+y no se ve nada. Donde el servidor exige segundo factor
+(`Security:RequireMultiFactor`, activo fuera de Development), se entra además
+con el código de seis cifras de la app de autenticación.
 
 | Comando | Qué hace |
 |---|---|
@@ -40,7 +44,7 @@ Keycloak, o se entra y no se ve nada.
 
 `npm run e2e` no forma parte de `npm test` y CI no debería descubrirlo
 fallando: necesita Postgres, Keycloak, RabbitMQ, el host y el servidor de
-desarrollo levantados, y una cuenta con `treasury-admin`. Lo que compra es la
+desarrollo levantados, y las cuentas que pide cada spec en su cabecera. Lo que compra es la
 única comprobación de que la redirección de entrada, el token, el cliente
 generado y el servidor se entienden —todo lo cual los tests unitarios simulan,
 y en todo lo cual ha vivido un fallo real.
@@ -101,9 +105,26 @@ leer esta pantalla.
 
 ## Alcance
 
-Esta versión ve los fondos, concilia el escrow, acredita el float y enciende o
-apaga monedas y redes (rol `treasury-admin`), y trae la **mesa P2P** para otra
-persona con otro rol, `p2p-operator`:
+**Lo que se ve lo decide el servidor.** Al entrar, la consola pide
+`GET /v1/me/permissions` y enseña las pantallas cuyo permiso tiene la cuenta;
+los botones que cambian algo piden además el suyo. Todo lo decide de verdad el
+API en cada petición: esto sólo evita enseñar un botón que acabaría en 403.
+Si la cuenta tiene roles que se anulan (proponer y aprobar, por ejemplo), o le
+falta el segundo factor, la consola lo dice en vez de mostrar pantallas vacías.
+
+| Pantalla | Permiso | Botones |
+|---|---|---|
+| Fondos, Conciliación | `treasury.read` | «Proponer ingreso» con `treasury.propose` |
+| Aprobaciones | `treasury.read` | Aprobar/Rechazar con `treasury.approve`, nunca lo propio; Retirar lo propio |
+| Monedas y redes | `catalog.manage` | |
+| Cola P2P | `p2p.read` | Pagado/Recibido/Falló con `p2p.settle` |
+| Métodos P2P | `p2p.read` | Editar con `p2p.manage`; si no, sólo lectura |
+| Cuentas | `support.read` | Congelar, descongelar y nivel con `compliance.act` |
+| Auditoría | `audit.read` | |
+
+**Un ingreso lo hacen dos personas.** «Proponer ingreso» no mueve dinero: crea
+una propuesta que otra persona aprueba en «Aprobaciones» (o rechaza, con
+motivo). Si nadie decide en 24 horas, vence.
 
 - **Cola P2P**: lo que espera a alguien, que se actualiza sola. Una venta se
   marca «pagada» o «falló» y una compra «recibida», siempre con la referencia
@@ -116,8 +137,9 @@ persona con otro rol, `p2p-operator`:
   sentido), instrucciones de pago y alta de un método para otra moneda fiat
   que el catálogo tenga encendida.
 
-Cada rol ve sólo sus pantallas; quien tiene los dos, las dos.
-`e2e/p2p.spec.ts` recorre la mesa contra el host real (ver su cabecera).
+`e2e/console.spec.ts` recorre el ingreso con dos personas, `e2e/p2p.spec.ts`
+la mesa y `e2e/security.spec.ts` congelar una cuenta y verlo en la auditoría,
+todos contra el host real (ver sus cabeceras).
 
 `npm run e2e` recorre además la caducidad real de un token: entra, espera más
 de sesenta segundos y comprueba que la siguiente pantalla hace exactamente un

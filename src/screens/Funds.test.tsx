@@ -89,7 +89,7 @@ describe('Fondos', () => {
 
     renderWith(<Funds />);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/treasury-admin/);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/permiso/);
     // The correlation id, because asking for it after the page is reloaded
     // never works.
     expect(screen.getByText(/abc123/)).toBeInTheDocument();

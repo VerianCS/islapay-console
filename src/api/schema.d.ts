@@ -101,6 +101,99 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["StaffAccess"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    actor?: string;
+                    action?: string;
+                    limit?: number;
+                    cursor?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CursorPageOfAuditEntryDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/transfers": {
         parameters: {
             query?: never;
@@ -897,6 +990,248 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/compliance/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query: {
+                    email: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AccountStandingDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/compliance/accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AccountStandingDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/compliance/accounts/{id}/freeze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StandingChangeRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AccountStandingDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/compliance/accounts/{id}/unfreeze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["StandingChangeRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AccountStandingDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/compliance/accounts/{id}/level": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["LevelChangeRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["AccountStandingDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2396,13 +2731,252 @@ export interface paths {
                 };
             };
             responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TreasuryProposalDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/treasury/proposals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    status?: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
                 /** @description OK */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["CreditReceiptDto"];
+                        "application/json": components["schemas"]["TreasuryProposalDto"][];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/treasury/proposals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TreasuryProposalDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/treasury/proposals/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": null | components["schemas"]["TreasuryDecisionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TreasuryProposalDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/treasury/proposals/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TreasuryDecisionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TreasuryProposalDto"];
+                    };
+                };
+                /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
+                default: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ApiProblem"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/admin/treasury/proposals/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TreasuryProposalDto"];
                     };
                 };
                 /** @description A refusal. application/problem+json, and 'code' is the only field a client may branch on. */
@@ -2431,6 +3005,26 @@ export interface components {
             balance: components["schemas"]["Money"];
             cardLast4: null | string;
         };
+        AccountStandingDto: {
+            userId: string;
+            name: string;
+            email: string;
+            phone: null | string;
+            phoneVerified: boolean;
+            identityVerified: boolean;
+            /** Format: int32 */
+            level: number;
+            maxPerMovement: string;
+            frozen: boolean;
+            frozenReason: null | string;
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            frozenAt: null | string;
+            frozenBy: null | string;
+        };
         /** @description The body of every refusal this API makes. */
         ApiProblem: {
             /**
@@ -2450,26 +3044,33 @@ export interface components {
             /** @description Whatever the code needs to be actionable — the currency that was short, the field that was wrong. */
             meta?: null | Record<string, never>;
         };
-        AuthSessionResponse: {
-            tokens: components["schemas"]["TokenPair"];
-            user: components["schemas"]["UserDto"];
-        };
-        CreditReceiptDto: {
-            /** Format: uuid */
-            postingId: string;
-            destination: string;
-            amount: components["schemas"]["Money"];
-            balanceAfter: components["schemas"]["Money"];
-            source: string;
-            reason: string;
-            by: string;
+        AuditEntryDto: {
+            /** Format: int64 */
+            seq: number;
             /**
              * Format: date-time
              * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
              * @example 2026-09-22T14:05:09.123Z
              */
             at: string;
-            applied: boolean;
+            actor: string;
+            actorName: null | string;
+            kind: string;
+            action: string;
+            permission: null | string;
+            target: null | string;
+            outcome: string;
+            /** Format: int32 */
+            status: null | number;
+            details: {
+                [key: string]: string;
+            };
+            correlation: null | string;
+            hash: string;
+        };
+        AuthSessionResponse: {
+            tokens: components["schemas"]["TokenPair"];
+            user: components["schemas"]["UserDto"];
         };
         CreditRequest: {
             destination: string;
@@ -2506,6 +3107,10 @@ export interface components {
             sortOrder: number;
             currency?: components["schemas"]["Currency"];
             isOnChain?: boolean;
+        };
+        CursorPageOfAuditEntryDto: {
+            items: components["schemas"]["AuditEntryDto"][];
+            nextCursor?: null | string;
         };
         CursorPageOfListingDto: {
             items: components["schemas"]["ListingDto"][];
@@ -2553,7 +3158,7 @@ export interface components {
              * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
              * @example 2026-09-22T14:05:09.123Z
              */
-            creditedAt: string;
+            creditedAt: null | string;
         };
         DepositNetworkDto: {
             id: string;
@@ -2603,6 +3208,11 @@ export interface components {
                 [key: string]: string;
             };
         };
+        LevelChangeRequest: {
+            /** Format: int32 */
+            level: number;
+            reason: string;
+        };
         ListingDto: {
             id: string;
             sellerId: string;
@@ -2625,6 +3235,7 @@ export interface components {
         LoginRequest: {
             email: string;
             password: string;
+            code?: null | string;
         };
         Money: {
             /**
@@ -2773,13 +3384,13 @@ export interface components {
              * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
              * @example 2026-09-22T14:05:09.123Z
              */
-            expiresAt?: string;
+            expiresAt?: null | string;
             /**
              * Format: date-time
              * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
              * @example 2026-09-22T14:05:09.123Z
              */
-            settledAt?: string;
+            settledAt?: null | string;
             operatorReference?: null | string;
             failureReason?: null | string;
         };
@@ -2840,7 +3451,7 @@ export interface components {
              * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
              * @example 2026-09-22T14:05:09.123Z
              */
-            settledAt: string;
+            settledAt: null | string;
             payoutTo?: null | string;
         };
         P2PTradeRequest: {
@@ -2879,6 +3490,15 @@ export interface components {
             email: string;
             phone: string;
             password: string;
+        };
+        StaffAccess: {
+            roles: string[];
+            permissions: string[];
+            conflicts: string[];
+            multiFactorRequired: boolean;
+        };
+        StandingChangeRequest: {
+            reason: string;
         };
         TokenPair: {
             accessToken: string;
@@ -2926,6 +3546,44 @@ export interface components {
             asOf: string;
             accounts: components["schemas"]["TreasuryAccountDto"][];
         };
+        TreasuryDecisionRequest: {
+            note: null | string;
+        };
+        TreasuryProposalDto: {
+            /** Format: uuid */
+            id: string;
+            kind: string;
+            status: string;
+            destination: string;
+            amount: components["schemas"]["Money"];
+            source: string;
+            reason: string;
+            proposedBy: string;
+            proposedByName: null | string;
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            proposedAt: string;
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            expiresAt: string;
+            decidedBy: null | string;
+            decidedByName: null | string;
+            /**
+             * Format: date-time
+             * @description UTC, ISO 8601, to the millisecond: 2026-09-22T14:05:09.123Z.
+             * @example 2026-09-22T14:05:09.123Z
+             */
+            decidedAt: null | string;
+            decisionNote: null | string;
+            /** Format: uuid */
+            postingId: null | string;
+        };
         TreasuryReconciliationDto: {
             /**
              * Format: date-time
@@ -2943,6 +3601,13 @@ export interface components {
             phone: null | string;
             emailVerified: boolean;
             phoneVerified: boolean;
+            /**
+             * Format: int32
+             * @default 0
+             */
+            level: number;
+            /** @default false */
+            frozen: boolean;
         };
         WalletResponse: {
             accounts: components["schemas"]["AccountDto"][];
@@ -2959,13 +3624,15 @@ export interface components {
     pathItems: never;
 }
 export type SchemaAccountDto = components['schemas']['AccountDto'];
+export type SchemaAccountStandingDto = components['schemas']['AccountStandingDto'];
 export type SchemaApiProblem = components['schemas']['ApiProblem'];
+export type SchemaAuditEntryDto = components['schemas']['AuditEntryDto'];
 export type SchemaAuthSessionResponse = components['schemas']['AuthSessionResponse'];
-export type SchemaCreditReceiptDto = components['schemas']['CreditReceiptDto'];
 export type SchemaCreditRequest = components['schemas']['CreditRequest'];
 export type SchemaCurrency = components['schemas']['Currency'];
 export type SchemaCurrencyDto = components['schemas']['CurrencyDto'];
 export type SchemaCurrencyInfo = components['schemas']['CurrencyInfo'];
+export type SchemaCursorPageOfAuditEntryDto = components['schemas']['CursorPageOfAuditEntryDto'];
 export type SchemaCursorPageOfListingDto = components['schemas']['CursorPageOfListingDto'];
 export type SchemaCursorPageOfOrderDto = components['schemas']['CursorPageOfOrderDto'];
 export type SchemaCursorPageOfP2PTradeDto = components['schemas']['CursorPageOfP2PTradeDto'];
@@ -2978,6 +3645,7 @@ export type SchemaEscrowReconciliationDto = components['schemas']['EscrowReconci
 export type SchemaHealthReport = components['schemas']['HealthReport'];
 export type SchemaLedgerEntryPage = components['schemas']['LedgerEntryPage'];
 export type SchemaLedgerEntryView = components['schemas']['LedgerEntryView'];
+export type SchemaLevelChangeRequest = components['schemas']['LevelChangeRequest'];
 export type SchemaListingDto = components['schemas']['ListingDto'];
 export type SchemaLoginRequest = components['schemas']['LoginRequest'];
 export type SchemaMoney = components['schemas']['Money'];
@@ -3006,11 +3674,15 @@ export type SchemaPublishListingRequest = components['schemas']['PublishListingR
 export type SchemaRedeemOrderRequest = components['schemas']['RedeemOrderRequest'];
 export type SchemaRefreshRequest = components['schemas']['RefreshRequest'];
 export type SchemaRegisterRequest = components['schemas']['RegisterRequest'];
+export type SchemaStaffAccess = components['schemas']['StaffAccess'];
+export type SchemaStandingChangeRequest = components['schemas']['StandingChangeRequest'];
 export type SchemaTokenPair = components['schemas']['TokenPair'];
 export type SchemaTransactionDto = components['schemas']['TransactionDto'];
 export type SchemaTransferRequest = components['schemas']['TransferRequest'];
 export type SchemaTreasuryAccountDto = components['schemas']['TreasuryAccountDto'];
 export type SchemaTreasuryBalancesDto = components['schemas']['TreasuryBalancesDto'];
+export type SchemaTreasuryDecisionRequest = components['schemas']['TreasuryDecisionRequest'];
+export type SchemaTreasuryProposalDto = components['schemas']['TreasuryProposalDto'];
 export type SchemaTreasuryReconciliationDto = components['schemas']['TreasuryReconciliationDto'];
 export type SchemaUserDto = components['schemas']['UserDto'];
 export type SchemaWalletResponse = components['schemas']['WalletResponse'];

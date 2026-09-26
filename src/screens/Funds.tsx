@@ -5,6 +5,7 @@ import type { Money } from '../money/money';
 import { readMoney, useBalances, useScales } from '../api/queries';
 import type { TreasuryAccount } from '../api/queries';
 import { CreditDialog } from './CreditDialog';
+import { Can, useCan } from '../auth/AuthProvider';
 import { Entries } from './Entries';
 
 /** What each account is for, for somebody who does not have §8.4 memorised. */
@@ -23,6 +24,9 @@ export function Funds() {
   const scales = useScales();
   const [crediting, setCrediting] = useState(false);
   const [looking, setLooking] = useState<{ owner: string; currency: string } | null>(null);
+  // Only whoever may propose sees the button: an approver or an auditor reads
+  // this screen too, and a button that answers 403 explains nothing.
+  const propose = useCan(Can.treasuryPropose);
 
   const head = (
     <div className="page-head">
@@ -35,9 +39,11 @@ export function Funds() {
         </p>
       </div>
       <div style={{ flex: 1 }} />
-      <button type="button" className="primary" onClick={() => setCrediting(true)}>
-        Ingresar dinero
-      </button>
+      {propose && (
+        <button type="button" className="primary" onClick={() => setCrediting(true)}>
+          Proponer ingreso
+        </button>
+      )}
     </div>
   );
 
@@ -85,9 +91,11 @@ export function Funds() {
           </p>
         </div>
         <div style={{ flex: 1 }} />
-        <button type="button" className="primary" onClick={() => setCrediting(true)}>
-          Ingresar dinero
-        </button>
+        {propose && (
+          <button type="button" className="primary" onClick={() => setCrediting(true)}>
+            Proponer ingreso
+          </button>
+        )}
       </div>
 
       <p className="muted" style={{ fontSize: 13, marginTop: -8 }}>

@@ -20,13 +20,4 @@ export const config = {
    */
   apiBase:
     (import.meta.env['VITE_API_BASE'] as string | undefined) || window.location.origin,
-
-  /** The realm role the treasury screens require. */
-  role: 'treasury-admin',
-
-  /**
-   * The realm role the P2P desk requires. Separate on purpose: whoever pays
-   * out pesos all day should not also be able to put money into the funds.
-   */
-  p2pRole: 'p2p-operator',
 } as const;

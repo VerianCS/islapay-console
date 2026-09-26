@@ -6,7 +6,7 @@ import { renderWith, signedIn } from '../test/harness';
 import { API, p2pCatalogue, problem, server } from '../test/server';
 import { P2PDesk, waited } from './P2PDesk';
 
-const operator = signedIn(['p2p-operator']);
+const operator = signedIn(['p2p.read', 'p2p.settle']);
 
 // Shapes copied from `admin-queue.json` / `admin-search.json`, which the
 // backend's `Capture_the_p2p_responses` wrote from a running server.

@@ -69,11 +69,26 @@ describe('La consola', () => {
   });
 
   it('explains a missing role instead of showing empty screens', async () => {
-    renderWith(<MemoryRouter>{<App />}</MemoryRouter>, signedIn(['catalog-admin']));
+    renderWith(<MemoryRouter>{<App />}</MemoryRouter>, signedIn([]));
 
-    expect(await screen.findByText(/no tiene el rol/i)).toBeInTheDocument();
-    expect(screen.getByText('treasury-admin')).toBeInTheDocument();
+    expect(await screen.findByText(/no tiene ningún rol de personal/i)).toBeInTheDocument();
     expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
+  });
+
+  it('says why conflicting roles give nothing', async () => {
+    renderWith(
+      <MemoryRouter>{<App />}</MemoryRouter>,
+      signedIn([], { conflicts: ['treasury-operator+treasury-approver'] }),
+    );
+
+    expect(await screen.findByText(/no pueden ir juntos/i)).toBeInTheDocument();
+    expect(screen.getByText(/treasury-operator\+treasury-approver/)).toBeInTheDocument();
+  });
+
+  it('asks for the authenticator code when a role needs a second factor', async () => {
+    renderWith(<MemoryRouter>{<App />}</MemoryRouter>, signedIn([], { multiFactorRequired: true }));
+
+    expect(await screen.findByText(/sin el código de su app/i)).toBeInTheDocument();
   });
 
   it('opens on the funds, because that is the question people come with', async () => {
@@ -95,12 +110,38 @@ describe('La consola', () => {
       http.get('/v1/admin/p2p/queue', () => HttpResponse.json([])),
     );
 
-    renderWith(<MemoryRouter initialEntries={['/fondos']}>{<App />}</MemoryRouter>, signedIn(['p2p-operator']));
+    renderWith(
+      <MemoryRouter initialEntries={['/fondos']}>{<App />}</MemoryRouter>,
+      signedIn(['p2p.read', 'p2p.settle']),
+    );
 
     // Sent to the desk: the funds are not theirs to see.
     expect(await screen.findByRole('heading', { name: 'Mesa P2P' })).toBeInTheDocument();
     const nav = screen.getByRole('navigation');
     expect(nav).toHaveTextContent('Cola P2P');
     expect(nav).not.toHaveTextContent('Fondos');
+    expect(nav).not.toHaveTextContent('Auditoría');
+  });
+
+  it('shows the auditor every screen that reads, and nothing that writes', async () => {
+    server.use(
+      catalogue(),
+      http.get('/v1/admin/treasury/balances', () =>
+        HttpResponse.json({ asOf: '2026-09-22T14:05:09.123Z', accounts: [] }),
+      ),
+    );
+
+    renderWith(
+      <MemoryRouter initialEntries={['/']}>{<App />}</MemoryRouter>,
+      signedIn(['support.read', 'p2p.read', 'treasury.read', 'compliance.read', 'audit.read']),
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Fondos' })).toBeInTheDocument();
+    const nav = screen.getByRole('navigation');
+    for (const label of ['Fondos', 'Aprobaciones', 'Cola P2P', 'Cuentas', 'Auditoría']) {
+      expect(nav).toHaveTextContent(label);
+    }
+    expect(nav).not.toHaveTextContent('Monedas y redes');
+    expect(screen.queryByRole('button', { name: /proponer ingreso/i })).not.toBeInTheDocument();
   });
 });

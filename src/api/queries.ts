@@ -17,7 +17,10 @@ export type TreasuryAccount = Schema<'TreasuryAccountDto'>;
 export type Reconciliation = Schema<'TreasuryReconciliationDto'>;
 export type EscrowRow = Schema<'EscrowReconciliationDto'>;
 export type CreditRequest = Schema<'CreditRequest'>;
-export type CreditReceipt = Schema<'CreditReceiptDto'>;
+export type TreasuryProposal = Schema<'TreasuryProposalDto'>;
+export type AuditEntry = Schema<'AuditEntryDto'>;
+export type AuditPage = Schema<'CursorPageOfAuditEntryDto'>;
+export type AccountStanding = Schema<'AccountStandingDto'>;
 export type LedgerEntryPage = Schema<'LedgerEntryPage'>;
 export type P2PQueueItem = Schema<'P2PQueueItemDto'>;
 export type P2PTrade = Schema<'P2PTradeDto'>;
@@ -169,15 +172,15 @@ export function useAccountEntries(
 }
 
 /**
- * Puts money in.
+ * Asks for money to be put in. Moves nothing: somebody else approves it.
  *
  * The idempotency key is minted here, once per call, and deliberately not
  * derived from the amount and the destination: two intentional credits of the
- * same amount to the same place are two credits, and a key that collapsed them
- * would silently discard the second. What the key protects against is the same
- * press arriving twice.
+ * same amount to the same place are two proposals, and a key that collapsed
+ * them would silently discard the second. What the key protects against is the
+ * same press arriving twice.
  */
-export function useCredit(): UseMutationResult<CreditReceipt, Error, CreditRequest> {
+export function useProposeCredit(): UseMutationResult<TreasuryProposal, Error, CreditRequest> {
   const api = useApi();
   const cache = useQueryClient();
 
@@ -190,6 +193,150 @@ export function useCredit(): UseMutationResult<CreditReceipt, Error, CreditReque
         }),
       ),
     onSuccess: () => cache.invalidateQueries({ queryKey: ['treasury'] }),
+  });
+}
+
+/** Proposals, newest first; `pending` for the approvals inbox. */
+export function useProposals(status: string | null): UseQueryResult<readonly TreasuryProposal[]> {
+  const api = useApi();
+
+  return useQuery({
+    queryKey: ['treasury', 'proposals', status],
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/admin/treasury/proposals', {
+          params: { query: { ...(status ? { status } : {}), limit: 100 } },
+        }),
+      ),
+  });
+}
+
+/**
+ * Approves, rejects or withdraws a proposal.
+ *
+ * The key comes from the dialog, minted when it opens: approving twice after a
+ * timeout is the same approval, and the server answers the second with the
+ * first rather than posting the money again.
+ */
+export function useDecideProposal(): UseMutationResult<
+  TreasuryProposal,
+  Error,
+  { id: string; verdict: 'approve' | 'reject' | 'withdraw'; note?: string; key: string }
+> {
+  const api = useApi();
+  const cache = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, verdict, note, key }) => {
+      const path = { params: { path: { id } } };
+      switch (verdict) {
+        case 'approve':
+          return unwrap(
+            api.POST('/v1/admin/treasury/proposals/{id}/approve', {
+              ...path,
+              body: { note: note ?? null },
+              headers: { 'Idempotency-Key': key },
+            }),
+          );
+        case 'reject':
+          return unwrap(
+            api.POST('/v1/admin/treasury/proposals/{id}/reject', {
+              ...path,
+              body: { note: note ?? null },
+            }),
+          );
+        case 'withdraw':
+          return unwrap(api.POST('/v1/admin/treasury/proposals/{id}/withdraw', path));
+      }
+    },
+    onSettled: () => cache.invalidateQueries({ queryKey: ['treasury'] }),
+  });
+}
+
+// ------------------------------------------------------------------ audit
+
+/** One page of the audit log, newest first. */
+export function useAudit(
+  actor: string,
+  action: string,
+  cursor: string | null,
+): UseQueryResult<AuditPage> {
+  const api = useApi();
+
+  return useQuery({
+    queryKey: ['audit', actor, action, cursor],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/admin/audit', {
+          params: {
+            query: {
+              ...(actor.trim() !== '' ? { actor: actor.trim() } : {}),
+              ...(action.trim() !== '' ? { action: action.trim() } : {}),
+              ...(cursor ? { cursor } : {}),
+              limit: 50,
+            },
+          },
+        }),
+      ),
+  });
+}
+
+// ------------------------------------------------------------------ compliance
+
+/** An account by the address the person gives on the phone. */
+export function useAccountLookup(email: string): UseQueryResult<AccountStanding> {
+  const api = useApi();
+  const address = email.trim().toLowerCase();
+
+  return useQuery({
+    queryKey: ['compliance', 'account', address],
+    enabled: address !== '',
+    queryFn: () =>
+      unwrap(api.GET('/v1/admin/compliance/accounts', { params: { query: { email: address } } })),
+  });
+}
+
+/** Freezes, unfreezes or sets the level of an account. Always with a reason. */
+export function useChangeStanding(): UseMutationResult<
+  AccountStanding,
+  Error,
+  | { id: string; change: 'freeze' | 'unfreeze'; reason: string }
+  | { id: string; change: 'level'; level: number; reason: string }
+> {
+  const api = useApi();
+  const cache = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request) => {
+      const path = { params: { path: { id: request.id } } };
+      switch (request.change) {
+        case 'freeze':
+          return unwrap(
+            api.POST('/v1/admin/compliance/accounts/{id}/freeze', {
+              ...path,
+              body: { reason: request.reason },
+            }),
+          );
+        case 'unfreeze':
+          return unwrap(
+            api.POST('/v1/admin/compliance/accounts/{id}/unfreeze', {
+              ...path,
+              body: { reason: request.reason },
+            }),
+          );
+        case 'level':
+          return unwrap(
+            api.PUT('/v1/admin/compliance/accounts/{id}/level', {
+              ...path,
+              body: { level: request.level, reason: request.reason },
+            }),
+          );
+      }
+    },
+    onSuccess: (after) =>
+      cache.setQueryData(['compliance', 'account', after.email.toLowerCase()], after),
   });
 }
 

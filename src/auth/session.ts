@@ -84,11 +84,18 @@ export class Session implements TokenSource {
   /**
    * Signs in. Throws the server's refusal as an `ApiFailure`.
    *
-   * The password is a parameter and goes nowhere but the request body.
+   * The password is a parameter and goes nowhere but the request body. So is
+   * the code from an authenticator app, which staff need where the server
+   * requires a second factor.
    */
-  async signIn(email: string, password: string): Promise<void> {
+  async signIn(email: string, password: string, code?: string): Promise<void> {
+    const oneTime = code?.replace(/\s/g, '') ?? '';
     const session = await unwrap(
-      guard(this.auth.POST('/v1/auth/login', { body: { email: email.trim(), password } })),
+      guard(
+        this.auth.POST('/v1/auth/login', {
+          body: { email: email.trim(), password, ...(oneTime !== '' ? { code: oneTime } : {}) },
+        }),
+      ),
     );
     this.adopt(session.tokens);
   }

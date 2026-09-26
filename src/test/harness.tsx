@@ -3,22 +3,35 @@ import { render } from '@testing-library/react';
 import type { RenderResult } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { AuthContext } from '../auth/AuthProvider';
-import type { AuthState } from '../auth/AuthProvider';
+import type { AuthState, StaffAccess } from '../auth/AuthProvider';
 
 /**
- * A signed-in treasurer, without a server.
+ * A signed-in member of staff, without a server.
  *
- * What these tests are about is what the screens do with a session. How the
- * session itself signs in and refreshes is tested on its own, in
- * `session.test.ts`, against the same stubbed network.
+ * What these tests are about is what the screens do with a session and a set
+ * of permissions. How the session itself signs in and refreshes is tested on
+ * its own, in `session.test.ts`, against the same stubbed network; which
+ * permissions a role gives is the server's table, tested there.
+ *
+ * By default a treasury operator: reads the funds and proposes credits.
  */
-export function signedIn(roles: readonly string[] = ['treasury-admin']): AuthState {
+export function signedIn(
+  permissions: readonly string[] = ['treasury.read', 'treasury.propose', 'catalog.manage'],
+  extra: Partial<StaffAccess> = {},
+): AuthState {
   return {
     operator: {
       id: 'op-1',
       name: 'Ana Pérez',
       email: 'ana@islapay.cu',
-      roles,
+      roles: [],
+    },
+    access: {
+      roles: [],
+      permissions: [...permissions],
+      conflicts: [],
+      multiFactorRequired: false,
+      ...extra,
     },
     loading: false,
     ended: null,

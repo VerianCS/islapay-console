@@ -15,11 +15,12 @@ export function SignIn({
   onSignIn,
   ended,
 }: {
-  onSignIn: (email: string, password: string) => Promise<void>;
+  onSignIn: (email: string, password: string, code?: string) => Promise<void>;
   ended: Ended;
 }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<unknown>(null);
 
@@ -30,10 +31,11 @@ export function SignIn({
     setBusy(true);
     setFailure(null);
     try {
-      await onSignIn(email, password);
+      await onSignIn(email, password, code);
     } catch (error) {
       setFailure(error);
       setPassword('');
+      setCode('');
     } finally {
       setBusy(false);
     }
@@ -43,7 +45,7 @@ export function SignIn({
 
   return (
     <div className="centered">
-      <Card title="IslaPay · Tesorería">
+      <Card title="IslaPay · Consola">
         <form className="card__body" onSubmit={submit} style={{ textAlign: 'left' }}>
           {ended === 'expired' && failure === null && (
             <Note tone="warn">La sesión caducó. Vuelve a entrar.</Note>
@@ -79,6 +81,24 @@ export function SignIn({
             )}
           </Field>
 
+          <Field
+            label="Código de la app de autenticación"
+            hint="Seis cifras. El personal lo necesita; si tu cuenta no tiene app configurada, déjalo vacío."
+          >
+            {(parts) => (
+              <input
+                {...parts}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9 ]*"
+                maxLength={7}
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className="num"
+              />
+            )}
+          </Field>
+
           <button
             type="submit"
             className="primary"
@@ -89,7 +109,8 @@ export function SignIn({
           </button>
 
           <p className="muted" style={{ fontSize: 12, margin: '14px 0 0' }}>
-            Hace falta el rol <code>treasury-admin</code>. La misma cuenta que en la app.
+            La misma cuenta que en la app, con un rol de personal. Lo que ves depende de
+            tus roles.
           </p>
         </form>
       </Card>
